@@ -1,0 +1,6 @@
+[
+  "test_analyzer.py::test_empty_file_raises",
+  "test_analyzer.py::test_header_only_raises",
+  "test_analyzer.py::test_missing_columns_raises",
+  "test_analyzer.py::test_sample_csv_matches_context_exactly"
+]
