@@ -59,9 +59,15 @@ export function IncidentAnalyzer() {
       </div>
 
       <FileDropzone disabled={loading} onFile={handleFile} />
-      <p className="text-sm text-muted-foreground">
+      <p className="flex flex-col gap-2 text-sm sm:flex-row sm:gap-6">
         <a href="/api/incidents/sample" className="underline underline-offset-4">
           Download sample CSV
+        </a>
+        <a
+          href="/api/incidents/project.zip"
+          className="font-medium underline underline-offset-4"
+        >
+          Download analyzer zip
         </a>
       </p>
 
