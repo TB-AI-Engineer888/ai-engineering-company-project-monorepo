@@ -55,10 +55,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <header className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-8">
             <div>
               <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                US · UK clinic network
+                HealthCore
               </p>
               <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-                Patient incident files stay inside HealthCore
+                Incident analyzer
               </h1>
             </div>
           </header>
