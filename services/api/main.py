@@ -32,6 +32,7 @@ _LAST_RESULT: AnalysisResult | None = None
 _LAST_CSV: str | None = None
 _ROOT = Path(__file__).resolve().parents[2]
 _SAMPLE_CSV = _ROOT / "scripts" / "incidents-healthcore.csv"
+_PROJECT_ZIP = _ROOT / "dist" / "healthcore-incident-analyzer.zip"
 
 
 @app.get("/health")
@@ -47,6 +48,18 @@ def sample_csv() -> FileResponse:
         path=_SAMPLE_CSV,
         filename="incidents-healthcore.csv",
         media_type="text/csv",
+    )
+
+
+@app.get("/api/incidents/project.zip")
+def project_zip() -> FileResponse:
+    if not _PROJECT_ZIP.is_file():
+        raise HTTPException(status_code=404, detail="Project zip is not available.")
+    return FileResponse(
+        path=_PROJECT_ZIP,
+        filename="healthcore-incident-analyzer.zip",
+        media_type="application/zip",
+        headers={"Content-Disposition": 'attachment; filename="healthcore-incident-analyzer.zip"'},
     )
 
 
