@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, ShieldCheck } from "lucide-react";
+import { Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 import {
   CATEGORY_LABELS,
   COUNTRY_LABELS,
@@ -101,25 +101,12 @@ export function AnalysisSummary({
 
   return (
     <div className="space-y-6">
-      <Alert className="border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
-        <ShieldCheck />
-        <AlertTitle>HIPAA / UK GDPR</AlertTitle>
-        <AlertDescription>
-          Patient identifiers never appear in this summary, the console report, or
-          the CSV export. Invalid rows are described by rule, not by patient.
-        </AlertDescription>
-      </Alert>
-
       {result.invalid_count > 0 && (
         <Alert className="border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
           <AlertTitle>
             {result.invalid_count} invalid record
-            {result.invalid_count === 1 ? "" : "s"} excluded from the main analysis
+            {result.invalid_count === 1 ? "" : "s"}
           </AlertTitle>
-          <AlertDescription>
-            These rows are counted by rule. They are never silently dropped, and
-            no patient_id is shown.
-          </AlertDescription>
         </Alert>
       )}
 
@@ -216,9 +203,7 @@ export function AnalysisSummary({
       <Card>
         <CardHeader>
           <CardTitle>Invalid records</CardTitle>
-          <CardDescription>
-            Counted by validation rule. Patient identifiers are never listed.
-          </CardDescription>
+          <CardDescription>By validation rule</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {result.invalid_count === 0 ? (

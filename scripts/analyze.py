@@ -43,7 +43,6 @@ def main(argv: list[str] | None = None) -> int:
             line = sys.stdin.readline()
             answer = line.strip().lower() if line else ""
             if not answer:
-                print("Non-interactive session: skipping CSV export prompt.")
                 return 0
     except EOFError:
         return 0
