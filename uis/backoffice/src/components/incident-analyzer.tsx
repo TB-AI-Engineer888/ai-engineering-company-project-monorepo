@@ -50,26 +50,9 @@ export function IncidentAnalyzer() {
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Incident analyzer</h2>
-        <p className="mt-2 max-w-3xl text-sm text-muted-foreground sm:text-base">
-          Upload an incident CSV. Rows are validated against clinic codes,
-          country, category, description, and closed-case scores. The summary
-          shows volume, category, status, country, and satisfaction. Patient
-          identifiers are not displayed.
-        </p>
       </div>
 
       <FileDropzone disabled={loading} onFile={handleFile} />
-      <p className="flex flex-col gap-2 text-sm sm:flex-row sm:gap-6">
-        <a href="/api/incidents/sample" className="underline underline-offset-4">
-          Download sample CSV
-        </a>
-        <a
-          href="/api/incidents/project.zip"
-          className="font-medium underline underline-offset-4"
-        >
-          Download analyzer zip
-        </a>
-      </p>
 
       {fileName && (
         <p className="text-sm text-muted-foreground">
@@ -80,7 +63,7 @@ export function IncidentAnalyzer() {
       {loading && (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm">
           <LoaderCircle className="size-4 animate-spin" />
-          Reading the file and calculating metrics. Invalid rows are counted, not ignored.
+          Analysing file…
         </div>
       )}
 
