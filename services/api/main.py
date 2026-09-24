@@ -3,13 +3,19 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 
 from incident_analyzer import AnalysisError, AnalysisResult, analyze_csv_bytes, metrics_to_csv
 
+from deps import get_current_user
+from routers import auth_router, profiles_router, users_router
+
 app = FastAPI(title="HealthCore Incident Analyzer API", version="1.0.0")
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(profiles_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,7 +41,7 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "healthcore-incident-api"}
 
 
-@app.get("/api/incidents/sample")
+@app.get("/api/incidents/sample", dependencies=[Depends(get_current_user)])
 def sample_csv() -> FileResponse:
     if not _SAMPLE_CSV.is_file():
         raise HTTPException(status_code=404, detail="Sample CSV is not available.")
@@ -46,7 +52,7 @@ def sample_csv() -> FileResponse:
     )
 
 
-@app.post("/api/incidents/analyze")
+@app.post("/api/incidents/analyze", dependencies=[Depends(get_current_user)])
 async def analyze_incidents(file: UploadFile = File(...)) -> JSONResponse:
     global _LAST_RESULT, _LAST_CSV
 
@@ -78,7 +84,7 @@ async def analyze_incidents(file: UploadFile = File(...)) -> JSONResponse:
     return JSONResponse(result.to_dict())
 
 
-@app.get("/api/incidents/results/export")
+@app.get("/api/incidents/results/export", dependencies=[Depends(get_current_user)])
 def export_results() -> Response:
     if _LAST_CSV is None or _LAST_RESULT is None:
         raise HTTPException(
@@ -91,7 +97,7 @@ def export_results() -> Response:
     return Response(content=_LAST_CSV, media_type="text/csv; charset=utf-8", headers=headers)
 
 
-@app.get("/api/incidents/results")
+@app.get("/api/incidents/results", dependencies=[Depends(get_current_user)])
 def last_results() -> dict[str, Any]:
     if _LAST_RESULT is None:
         raise HTTPException(
@@ -101,7 +107,7 @@ def last_results() -> dict[str, Any]:
     return _LAST_RESULT.to_dict()
 
 
-@app.get("/")
+@app.get("/", dependencies=[Depends(get_current_user)])
 def root() -> dict[str, str]:
     return {
         "service": "HealthCore Incident Analyzer API",
