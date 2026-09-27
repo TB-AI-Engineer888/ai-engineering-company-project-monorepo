@@ -3,10 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 
+from auth_session import login_user, read_me, register_user, require_user, update_profile
 from incident_analyzer import AnalysisError, AnalysisResult, analyze_csv_bytes, metrics_to_csv
 
 app = FastAPI(title="HealthCore Incident Analyzer API", version="1.0.0")
@@ -35,8 +36,31 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "healthcore-incident-api"}
 
 
+@app.post("/users")
+async def create_user(request: Request) -> JSONResponse:
+    return register_user(await _json_body(request))
+
+
+@app.post("/auth/login")
+async def auth_login(request: Request) -> JSONResponse:
+    return login_user(await _json_body(request))
+
+
+@app.get("/auth/me")
+def auth_me(account: dict[str, Any] = Depends(read_me)) -> dict[str, Any]:
+    return account
+
+
+@app.put("/profiles/me")
+async def profiles_me(
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> JSONResponse:
+    return update_profile(await _json_body(request), authorization)
+
+
 @app.get("/api/incidents/sample")
-def sample_csv() -> FileResponse:
+def sample_csv(_account: dict[str, Any] = Depends(require_user)) -> FileResponse:
     if not _SAMPLE_CSV.is_file():
         raise HTTPException(status_code=404, detail="Sample CSV is not available.")
     return FileResponse(
@@ -47,7 +71,10 @@ def sample_csv() -> FileResponse:
 
 
 @app.post("/api/incidents/analyze")
-async def analyze_incidents(file: UploadFile = File(...)) -> JSONResponse:
+async def analyze_incidents(
+    file: UploadFile = File(...),
+    _account: dict[str, Any] = Depends(require_user),
+) -> JSONResponse:
     global _LAST_RESULT, _LAST_CSV
 
     filename = file.filename or "upload.csv"
@@ -79,7 +106,7 @@ async def analyze_incidents(file: UploadFile = File(...)) -> JSONResponse:
 
 
 @app.get("/api/incidents/results/export")
-def export_results() -> Response:
+def export_results(_account: dict[str, Any] = Depends(require_user)) -> Response:
     if _LAST_CSV is None or _LAST_RESULT is None:
         raise HTTPException(
             status_code=404,
@@ -92,7 +119,7 @@ def export_results() -> Response:
 
 
 @app.get("/api/incidents/results")
-def last_results() -> dict[str, Any]:
+def last_results(_account: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
     if _LAST_RESULT is None:
         raise HTTPException(
             status_code=404,
@@ -108,6 +135,13 @@ def root() -> dict[str, str]:
         "analyze": "POST /api/incidents/analyze",
         "export": "GET /api/incidents/results/export",
     }
+
+
+async def _json_body(request: Request) -> Any:
+    try:
+        return await request.json()
+    except Exception:
+        return None
 
 
 @app.exception_handler(HTTPException)

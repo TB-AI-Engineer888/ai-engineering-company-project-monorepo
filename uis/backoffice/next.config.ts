@@ -4,12 +4,25 @@ const apiOrigin = process.env.API_ORIGIN ?? "http://127.0.0.1:43180";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  agentRules: false,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   async rewrites() {
     return [
       {
         source: "/api/:path*",
         destination: `${apiOrigin}/api/:path*`,
+      },
+      {
+        source: "/auth/:path*",
+        destination: `${apiOrigin}/auth/:path*`,
+      },
+      {
+        source: "/users",
+        destination: `${apiOrigin}/users`,
+      },
+      {
+        source: "/profiles/:path*",
+        destination: `${apiOrigin}/profiles/:path*`,
       },
     ];
   },
