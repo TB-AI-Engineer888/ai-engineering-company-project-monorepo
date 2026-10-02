@@ -1,0 +1,6 @@
+.env
+.env.local
+services/api/data/
+__pycache__/
+*.py[cod]
+uis/backoffice/.next/

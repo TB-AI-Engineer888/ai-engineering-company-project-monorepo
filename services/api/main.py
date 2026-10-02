@@ -7,9 +7,13 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 
+from account_auth import load_env_files, router as account_router
 from incident_analyzer import AnalysisError, AnalysisResult, analyze_csv_bytes, metrics_to_csv
 
+load_env_files()
+
 app = FastAPI(title="HealthCore Incident Analyzer API", version="1.0.0")
+app.include_router(account_router)
 
 app.add_middleware(
     CORSMiddleware,

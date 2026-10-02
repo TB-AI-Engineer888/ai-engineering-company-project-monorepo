@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileBarChart, HeartPulse, LayoutDashboard } from "lucide-react";
+import { FileBarChart, HeartPulse, LayoutDashboard, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Operations overview", icon: LayoutDashboard },
   { href: "/incidents", label: "Incident analyzer", icon: FileBarChart },
+  { href: "/login", label: "Sign in", icon: LogIn },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -58,7 +59,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 HealthCore
               </p>
               <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-                Incident analyzer
+                {pathname.startsWith("/login") ||
+                pathname.startsWith("/register") ||
+                pathname.startsWith("/forgot-password") ||
+                pathname.startsWith("/reset-password") ||
+                pathname.startsWith("/account")
+                  ? "Account"
+                  : "Incident analyzer"}
               </h1>
             </div>
           </header>
