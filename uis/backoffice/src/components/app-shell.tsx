@@ -2,16 +2,35 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileBarChart, HeartPulse, LayoutDashboard } from "lucide-react";
+import { CircleUser, FileBarChart, HeartPulse, LayoutDashboard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Operations overview", icon: LayoutDashboard },
   { href: "/incidents", label: "Incident analyzer", icon: FileBarChart },
+  { href: "/account/profile", label: "Account profile", icon: CircleUser },
 ];
+
+const PUBLIC_PATHS = new Set(["/login", "/register"]);
+
+function sectionTitle(pathname: string) {
+  if (pathname.startsWith("/incidents")) return "Incident analyzer";
+  if (pathname.startsWith("/account")) return "Account";
+  return "Operations overview";
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  if (PUBLIC_PATHS.has(pathname)) {
+    return (
+      <div className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6">
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-background text-foreground">
@@ -58,9 +77,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 HealthCore
               </p>
               <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-                Incident analyzer
+                {sectionTitle(pathname)}
               </h1>
             </div>
+            <Button type="button" variant="outline" onClick={logout}>
+              Sign out
+            </Button>
           </header>
           <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8">{children}</main>
         </div>
