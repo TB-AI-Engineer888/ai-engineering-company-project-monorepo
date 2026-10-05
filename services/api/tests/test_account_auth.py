@@ -136,6 +136,7 @@ def test_resend_payload_contains_reset_link(monkeypatch) -> None:
     def _urlopen(request, timeout=20):
         captured["url"] = request.full_url
         captured["auth"] = request.get_header("Authorization")
+        captured["agent"] = request.get_header("User-agent")
         captured["body"] = json.loads(request.data.decode("utf-8"))
         return _Response()
 
@@ -152,6 +153,7 @@ def test_resend_payload_contains_reset_link(monkeypatch) -> None:
     body = captured["body"]
     assert captured["url"] == "https://api.resend.com/emails"
     assert captured["auth"] == "Bearer re_test_key"
+    assert captured["agent"] == "HealthCore/1.0"
     assert isinstance(body, dict)
     assert body["to"] == ["dee@healthcore.test"]
     assert "http://127.0.0.1:43123/reset-password?token=" in body["text"]

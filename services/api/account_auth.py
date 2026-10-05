@@ -178,6 +178,7 @@ def deliver_reset_email(recipient: str, reset_url: str) -> None:
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "User-Agent": "HealthCore/1.0",
         },
         method="POST",
     )
