@@ -28,16 +28,17 @@ import {
 } from "./utils/validations";
 
 console.log("--- Filtering ---");
-console.log("No-show appointments:", filterAppointmentsByStatus(appointments, "no-show"));
-console.log("Scheduled at clinic 1:", filterAppointmentsByCriteria(appointments, { status: "scheduled", clinicId: "clinic-1" }));
-console.log("Denied claims:", filterClaimsByStatus(claims, "denied"));
+console.log("No-show appointments:", filterAppointmentsByStatus(appointments, "no-show").length);
+console.log("Scheduled at clinic 1:", filterAppointmentsByCriteria(appointments, { status: "scheduled", clinicId: "clinic-1" }).length);
+console.log("Denied claims:", filterClaimsByStatus(claims, "denied").length);
 
 console.log("\n--- Sorting ---");
 console.log("Appointments by date (asc):", sortAppointmentsByDate(appointments, "asc").map((a) => a.scheduledDate));
 console.log("Claims by amount (desc):", sortClaimsByAmount(claims, "desc").map((c) => c.amount));
 
 console.log("\n--- Search ---");
-console.log("Linear search patient-2:", linearSearchPatientById(patients, "patient-2"));
+const foundPatient = linearSearchPatientById(patients, "patient-2");
+console.log("Linear search patient-2:", foundPatient?.id ?? "not found");
 console.log("Binary search patient-2, index:", binarySearchPatientIndexById(patients, "patient-2"));
 console.log("Linear search claim-99 (not found):", linearSearchClaimById(claims, "claim-99"));
 

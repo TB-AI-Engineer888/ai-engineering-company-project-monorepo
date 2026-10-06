@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { fetchMe } from "@/lib/auth";
 import { ApiError } from "@/lib/http";
@@ -13,6 +14,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const validatedToken = useRef<string | null>(null);
 
   useEffect(() => {
@@ -68,12 +70,23 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname, router]);
+  }, [pathname, router, attempt]);
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4 text-center text-sm text-muted-foreground">
-        {sessionError ?? "Checking your session…"}
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4 text-center text-sm text-muted-foreground">
+        <p>{sessionError ?? "Checking your session…"}</p>
+        {sessionError ? (
+          <>
+            <button type="button" className="underline underline-offset-4" onClick={() => setAttempt((value) => value + 1)}>
+              Try again
+            </button>
+            <Link href="/login" className="underline underline-offset-4">
+              Back to sign in
+            </Link>
+            <p>If this keeps happening, contact HealthCore support.</p>
+          </>
+        ) : null}
       </div>
     );
   }

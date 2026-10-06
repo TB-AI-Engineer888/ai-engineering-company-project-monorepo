@@ -52,7 +52,12 @@ def register_user(body: UserCreate) -> dict[str, Any]:
     try:
         user = create_user(body.email, body.password, Role.user)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        message = str(exc)
+        if "email already registered" in message:
+            message = "An account with this email already exists."
+        else:
+            message = "The account could not be created. Check the details and try again."
+        raise HTTPException(status_code=400, detail=message) from None
     profile = create_profile(user["id"], body.name, body.phone, body.address)
     return {**public_user(user), "profile": public_profile(profile)}
 
@@ -90,7 +95,12 @@ def put_user(user_id: int, body: UserUpdate, caller: dict = Depends(get_current_
     try:
         updated = update_user(user_id, changes)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        message = str(exc)
+        if "email already registered" in message:
+            message = "An account with this email already exists."
+        else:
+            message = "The account could not be updated. Check the details and try again."
+        raise HTTPException(status_code=400, detail=message) from None
     if updated is None:
         raise HTTPException(status_code=404, detail="User not found")
     return public_user(updated)
@@ -125,11 +135,26 @@ def put_my_profile(body: ProfileUpdate, caller: dict = Depends(get_current_user)
 async def login(request: Request) -> dict[str, str]:
     content_type = request.headers.get("content-type", "")
     if "application/json" in content_type:
-        body = LoginRequest.model_validate(await request.json())
+        try:
+            payload = await request.json()
+            body = LoginRequest.model_validate(payload)
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail="Enter an email and password, then try again.",
+            ) from None
         email = body.email
         password = body.password
     else:
-        form = await request.form()
+        try:
+            form = await request.form()
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail="The sign-in form could not be read. Try again.",
+            ) from None
         email = str(form.get("email") or form.get("username") or "")
         password = str(form.get("password") or "")
     user = get_user_by_email(email)

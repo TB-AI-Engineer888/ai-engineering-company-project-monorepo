@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
+
+logger = logging.getLogger("healthcore.api")
 
 from incident_analyzer import AnalysisError, AnalysisResult, analyze_csv_bytes, metrics_to_csv
 
@@ -67,7 +71,15 @@ async def analyze_incidents(file: UploadFile = File(...)) -> JSONResponse:
             ),
         )
 
-    raw = await file.read()
+    try:
+        raw = await file.read()
+    except Exception:
+        logger.exception("Upload read failed")
+        raise HTTPException(
+            status_code=400,
+            detail="The file could not be read. Export the incident extract as a CSV and try again.",
+        ) from None
+
     if not raw:
         raise HTTPException(
             status_code=400,
@@ -77,7 +89,16 @@ async def analyze_incidents(file: UploadFile = File(...)) -> JSONResponse:
     try:
         result = analyze_csv_bytes(raw, source_name=filename)
     except AnalysisError as exc:
-        raise HTTPException(status_code=exc.http_status, detail=exc.message) from exc
+        raise HTTPException(
+            status_code=exc.http_status,
+            detail=_public_detail(exc.message, exc.http_status),
+        ) from None
+    except Exception:
+        logger.exception("Incident analysis failed")
+        raise HTTPException(
+            status_code=500,
+            detail="The file could not be analysed. Check that it is a HealthCore incident CSV and try again.",
+        ) from None
 
     _LAST_RESULT = result
     _LAST_CSV = metrics_to_csv(result)
@@ -116,6 +137,48 @@ def root() -> dict[str, str]:
     }
 
 
+def _public_detail(detail: object, status_code: int) -> str:
+    if isinstance(detail, str):
+        text = detail.strip()
+        lowered = text.lower()
+        leaked = ("traceback", "secret", "pat-", "/home/", "/workspace/", "sqlite", "postgresql://")
+        if text and not any(marker in lowered for marker in leaked):
+            return text
+    if status_code == 401:
+        return "Sign in to continue."
+    if status_code == 403:
+        return "You do not have access to that action."
+    if status_code == 404:
+        return "The requested item is not available."
+    if status_code in {400, 422}:
+        return "The request could not be processed. Check the information and try again."
+    return "The request could not be completed. Try again, or contact HealthCore support."
+
+
 @app.exception_handler(HTTPException)
-async def http_exception_handler(_request, exc: HTTPException) -> JSONResponse:
-    return JSONResponse(status_code=exc.status_code, content={"error": exc.detail, "status": exc.status_code})
+async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:
+    message = _public_detail(exc.detail, exc.status_code)
+    return JSONResponse(status_code=exc.status_code, content={"error": message, "status": exc.status_code})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_request: Request, _exc: RequestValidationError) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "The request is missing required information. Check it and try again.",
+            "status": 422,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, _exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled error on %s", request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Something went wrong while processing the request. Try again, or contact HealthCore support if it continues.",
+            "status": 500,
+        },
+    )

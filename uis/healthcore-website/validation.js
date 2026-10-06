@@ -104,7 +104,8 @@ function setLanguage(lang) {
   // Swap dynamic pieces (select option labels) that can't hold nested spans.
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.getAttribute('data-i18n');
-    if (T[lang].options[key]) el.textContent = T[lang].options[key];
+    const label = T[lang]?.options?.[key];
+    if (label) el.textContent = label;
   });
 
   const enBtn = document.getElementById('lang-en-btn');
@@ -116,7 +117,11 @@ function setLanguage(lang) {
     (lang === 'en' ? enBtn : esBtn).classList.add('bg-brand-600', 'text-white');
   }
 
-  localStorage.setItem('hc-lang', lang);
+  try {
+    localStorage.setItem('hc-lang', lang);
+  } catch {
+    // The language still applies for this visit when storage is blocked.
+  }
 
   // Re-render language-dependent dynamic text that's already on screen
   // (a live error message or the character counter shouldn't go stale
@@ -129,7 +134,12 @@ function initLanguageToggle() {
   const esBtn = document.getElementById('lang-es-btn');
   if (!enBtn || !esBtn) return;
 
-  const stored = localStorage.getItem('hc-lang');
+  let stored = null;
+  try {
+    stored = localStorage.getItem('hc-lang');
+  } catch {
+    stored = null;
+  }
   setLanguage(stored === 'es' ? 'es' : 'en');
 
   enBtn.addEventListener('click', () => setLanguage('en'));
@@ -168,6 +178,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const eveningWarning = document.getElementById('evening-warning');
   const healthConcernCounter = document.getElementById('health_concern-counter');
   const successMessage = document.getElementById('success-message');
+
+  const formNodes = [patientIdWrapper, insuranceWrapper, eveningWarning, healthConcernCounter, successMessage];
+  const missingNode = Object.values(fields).some((node) => !node) || formNodes.some((node) => !node);
+  if (missingNode) {
+    const banner = document.createElement('p');
+    banner.setAttribute('role', 'alert');
+    banner.textContent = 'This form could not be loaded. Return to the HealthCore home page or contact support.';
+    form.prepend(banner);
+    form.addEventListener('submit', (event) => event.preventDefault());
+    return;
+  }
 
   /* ---------- Generic show/clear error pair (§1.18 textbook pattern) ---------- */
   function showError(input, message) {
@@ -488,11 +509,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (validators[input.id]) validators[input.id]();
       }
     });
-    if (!document.getElementById('new_patient-error').classList.contains('hidden')) {
-      showGroupError('new_patient-error', T[lang].errors.new_patient);
+    const newPatientError = document.getElementById('new_patient-error');
+    const insuranceError = document.getElementById('has_insurance-error');
+    if (newPatientError && !newPatientError.classList.contains('hidden')) {
+      showGroupError('new_patient-error', T[lang]?.errors?.new_patient || '');
     }
-    if (!document.getElementById('has_insurance-error').classList.contains('hidden')) {
-      showGroupError('has_insurance-error', T[lang].errors.has_insurance);
+    if (insuranceError && !insuranceError.classList.contains('hidden')) {
+      showGroupError('has_insurance-error', T[lang]?.errors?.has_insurance || '');
     }
   }
   window.refreshDynamicText = refreshDynamicText;

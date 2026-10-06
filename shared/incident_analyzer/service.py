@@ -183,11 +183,18 @@ def analyze_csv_path(path: str | Path) -> AnalysisResult:
             http_status=400,
         )
 
-    with open(csv_path, encoding="utf-8-sig") as handle:
-        non_empty_lines = 0
-        for line in handle:
-            if line.strip():
-                non_empty_lines += 1
+    try:
+        with open(csv_path, encoding="utf-8-sig") as handle:
+            non_empty_lines = 0
+            for line in handle:
+                if line.strip():
+                    non_empty_lines += 1
+    except OSError as exc:
+        raise AnalysisError(
+            "The file could not be read. Check that it is a readable CSV and try again.",
+            code="io_error",
+            http_status=400,
+        ) from exc
     if non_empty_lines == 0:
         raise AnalysisError(
             "The file is empty. Upload a CSV with a header row and incident records.",
@@ -195,21 +202,30 @@ def analyze_csv_path(path: str | Path) -> AnalysisResult:
             http_status=400,
         )
 
-    with open(csv_path, encoding="utf-8-sig", newline="") as handle:
-        sample = handle.read(4096)
-        if "\x00" in sample:
-            raise AnalysisError(
-                "The file looks like a binary document, not a CSV. Export incidents as CSV.",
-                code="invalid_format",
-                http_status=400,
-            )
-        handle.seek(0)
-        try:
-            dialect = csv.Sniffer().sniff(sample, delimiters=",;")
-        except csv.Error:
-            dialect = csv.excel
-        reader = csv.DictReader(handle, dialect=dialect)
-        return _analyze_reader(reader, source_name=os.path.basename(csv_path))
+    try:
+        with open(csv_path, encoding="utf-8-sig", newline="") as handle:
+            sample = handle.read(4096)
+            if "\x00" in sample:
+                raise AnalysisError(
+                    "The file looks like a binary document, not a CSV. Export incidents as CSV.",
+                    code="invalid_format",
+                    http_status=400,
+                )
+            handle.seek(0)
+            try:
+                dialect = csv.Sniffer().sniff(sample, delimiters=",;")
+            except csv.Error:
+                dialect = csv.excel
+            reader = csv.DictReader(handle, dialect=dialect)
+            return _analyze_reader(reader, source_name=os.path.basename(csv_path))
+    except AnalysisError:
+        raise
+    except OSError as exc:
+        raise AnalysisError(
+            "The file could not be read. Check that it is a readable CSV and try again.",
+            code="io_error",
+            http_status=400,
+        ) from exc
 
 
 def analyze_csv_bytes(raw: bytes, source_name: str = "upload.csv") -> AnalysisResult:
@@ -248,11 +264,16 @@ def analyze_csv_bytes(raw: bytes, source_name: str = "upload.csv") -> AnalysisRe
 def write_results_csv(result: AnalysisResult, output_path: str | Path) -> str:
     """Overwrite results.csv using csv.DictWriter and mode \"w\"."""
     destination = os.fspath(output_path)
-    with open(destination, "w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["metric", "value", "percentage"])
-        writer.writeheader()
-        for row in _metric_rows(result):
-            writer.writerow(row)
+    try:
+        with open(destination, "w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=["metric", "value", "percentage"])
+            writer.writeheader()
+            for row in _metric_rows(result):
+                writer.writerow(row)
+    except OSError:
+        raise
+    except csv.Error as exc:
+        raise OSError("Could not format the results CSV.") from exc
     return destination
 
 
