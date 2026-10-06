@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,23 +21,47 @@ export function ProfileForm() {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
 
+  const loadAccount = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const account = await fetchMe();
+      setEmail(account?.email ?? "");
+      setProfile(account?.profile ?? EMPTY);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "";
+      setLoadError(
+        message && !/traceback|request failed|\b[1-5]\d\d\b/i.test(message)
+          ? message
+          : "Your profile could not be loaded. Try again, or contact HealthCore support.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+    void (async () => {
+      setLoading(true);
+      setLoadError(null);
       try {
         const account = await fetchMe();
         if (cancelled) return;
-        setEmail(account.email);
-        setProfile(account.profile);
+        setEmail(account?.email ?? "");
+        setProfile(account?.profile ?? EMPTY);
       } catch (caught) {
-        if (!cancelled) {
-          setLoadError(caught instanceof Error ? caught.message : "Could not load your profile.");
-        }
+        if (cancelled) return;
+        const message = caught instanceof Error ? caught.message : "";
+        setLoadError(
+          message && !/traceback|request failed|\b[1-5]\d\d\b/i.test(message)
+            ? message
+            : "Your profile could not be loaded. Try again, or contact HealthCore support.",
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    void load();
+    })();
     return () => {
       cancelled = true;
     };
@@ -81,7 +106,18 @@ export function ProfileForm() {
     return (
       <Alert variant="destructive">
         <AlertTitle>Profile unavailable</AlertTitle>
-        <AlertDescription>{loadError}</AlertDescription>
+        <AlertDescription>
+          <p>{loadError}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button type="button" variant="outline" onClick={() => void loadAccount()}>
+              Try again
+            </Button>
+            <Link href="/" className="underline underline-offset-4">
+              Back to operations overview
+            </Link>
+          </div>
+          <p className="mt-2">If this keeps happening, contact HealthCore support.</p>
+        </AlertDescription>
       </Alert>
     );
   }
@@ -91,7 +127,10 @@ export function ProfileForm() {
       {saveError && (
         <Alert variant="destructive">
           <AlertTitle>Could not save</AlertTitle>
-          <AlertDescription>{saveError}</AlertDescription>
+          <AlertDescription>
+            <p>{saveError}</p>
+            <p className="mt-2">Use Save profile to try again, or contact HealthCore support if it continues.</p>
+          </AlertDescription>
         </Alert>
       )}
       {saved && (

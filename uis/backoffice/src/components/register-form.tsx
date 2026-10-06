@@ -77,7 +77,10 @@ export function RegisterForm() {
       {formError && (
         <Alert variant="destructive">
           <AlertTitle>Could not create the account</AlertTitle>
-          <AlertDescription>{formError}</AlertDescription>
+          <AlertDescription>
+            <p>{formError}</p>
+            <p className="mt-2">Correct the form and submit it again, or contact HealthCore support if the problem continues.</p>
+          </AlertDescription>
         </Alert>
       )}
       <Field
