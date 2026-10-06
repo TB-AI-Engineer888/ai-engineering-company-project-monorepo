@@ -91,21 +91,19 @@ export function AnalysisSummary({
   exporting,
   onExport,
 }: AnalysisSummaryProps) {
-  const avg =
-    result.avg_satisfaction_closed === null
-      ? "n/a"
-      : result.avg_satisfaction_closed.toFixed(2);
-  const scoreEntries = Object.entries(result.satisfaction_by_score).sort(
+  const average = result?.avg_satisfaction_closed;
+  const avg = typeof average === "number" && Number.isFinite(average) ? average.toFixed(2) : "n/a";
+  const scoreEntries = Object.entries(result?.satisfaction_by_score ?? {}).sort(
     ([left], [right]) => Number(left) - Number(right),
   );
 
   return (
     <div className="space-y-6">
-      {result.invalid_count > 0 && (
+      {(result?.invalid_count ?? 0) > 0 && (
         <Alert className="border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
           <AlertTitle>
-            {result.invalid_count} invalid record
-            {result.invalid_count === 1 ? "" : "s"}
+            {result?.invalid_count ?? 0} invalid record
+            {(result?.invalid_count ?? 0) === 1 ? "" : "s"}
           </AlertTitle>
         </Alert>
       )}
@@ -114,7 +112,7 @@ export function AnalysisSummary({
         <div>
           <h2 className="text-xl font-semibold tracking-tight">Analysis summary</h2>
           <p className="text-sm text-muted-foreground">
-            File processed: <span className="font-mono">{result.source_name}</span>
+            File processed: <span className="font-mono">{result?.source_name || "upload.csv"}</span>
           </p>
         </div>
         <Button onClick={onExport} disabled={exporting} size="lg">
@@ -124,17 +122,17 @@ export function AnalysisSummary({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Records processed" value={result.total_rows} hint="Valid + invalid" />
-        <MetricCard label="Valid records" value={result.valid_count} hint="Used for metrics" />
+        <MetricCard label="Records processed" value={result?.total_rows ?? 0} hint="Valid + invalid" />
+        <MetricCard label="Valid records" value={result?.valid_count ?? 0} hint="Used for metrics" />
         <MetricCard
           label="Invalid records"
-          value={result.invalid_count}
+          value={result?.invalid_count ?? 0}
           hint="Excluded from totals below"
         />
         <MetricCard
           label="Avg. satisfaction (closed)"
           value={avg}
-          hint={`${result.satisfaction_sample_size} of ${result.closed_valid_count} closed cases scored`}
+          hint={`${result?.satisfaction_sample_size ?? 0} of ${result?.closed_valid_count ?? 0} closed cases scored`}
         />
       </div>
 
@@ -142,23 +140,23 @@ export function AnalysisSummary({
         <BreakdownTable
           title="By incident category"
           description="Valid records only"
-          data={result.by_category}
+          data={result?.by_category ?? {}}
           labels={CATEGORY_LABELS}
-          total={result.valid_count}
+          total={result?.valid_count ?? 0}
         />
         <BreakdownTable
           title="By status"
           description="Valid records only"
-          data={result.by_status}
+          data={result?.by_status ?? {}}
           labels={STATUS_LABELS}
-          total={result.valid_count}
+          total={result?.valid_count ?? 0}
         />
         <BreakdownTable
           title="By country"
           description="Valid records only"
-          data={result.by_country}
+          data={result?.by_country ?? {}}
           labels={COUNTRY_LABELS}
-          total={result.valid_count}
+          total={result?.valid_count ?? 0}
         />
         <Card>
           <CardHeader>
@@ -173,7 +171,7 @@ export function AnalysisSummary({
             ) : (
               <div className="space-y-3">
                 {scoreEntries.map(([score, count]) => {
-                  const total = result.satisfaction_sample_size || 1;
+                  const total = result?.satisfaction_sample_size || 1;
                   const pct = Math.round((count / total) * 1000) / 10;
                   return (
                     <div key={score}>
@@ -206,14 +204,14 @@ export function AnalysisSummary({
           <CardDescription>By validation rule</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {result.invalid_count === 0 ? (
+          {(result?.invalid_count ?? 0) === 0 ? (
             <p className="text-sm text-muted-foreground">
               Every row passed validation. No records were excluded.
             </p>
           ) : (
             <>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(result.invalid_by_reason).map(([reason, count]) => (
+                {Object.entries(result?.invalid_by_reason ?? {}).map(([reason, count]) => (
                   <Badge key={reason} variant="secondary">
                     {labelFor(REASON_LABELS, reason)}: {count}
                   </Badge>
@@ -228,14 +226,14 @@ export function AnalysisSummary({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {result.invalid_records.map((item) => (
-                    <TableRow key={`${item.row_number}-${item.incident_id}`}>
-                      <TableCell className="tabular-nums">{item.row_number}</TableCell>
+                  {(result?.invalid_records ?? []).map((item, index) => (
+                    <TableRow key={`${item?.row_number ?? index}-${item?.incident_id || index}`}>
+                      <TableCell className="tabular-nums">{item?.row_number ?? "—"}</TableCell>
                       <TableCell className="font-mono">
-                        {item.incident_id || "—"}
+                        {item?.incident_id || "—"}
                       </TableCell>
                       <TableCell className="whitespace-normal">
-                        {item.details.join("; ")}
+                        {item?.details?.join("; ") || "This row did not pass validation."}
                       </TableCell>
                     </TableRow>
                   ))}

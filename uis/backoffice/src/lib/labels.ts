@@ -39,6 +39,10 @@ export const SCORE_LABELS: Record<string, string> = {
   "5": "Very satisfied",
 };
 
-export function labelFor(map: Record<string, string>, key: string): string {
-  return map[key] ?? key.replaceAll("_", " ");
+export function labelFor(
+  map: Record<string, string> | null | undefined,
+  key: string | null | undefined,
+): string {
+  if (!key) return "Unknown";
+  return map?.[key] ?? key.replaceAll("_", " ");
 }

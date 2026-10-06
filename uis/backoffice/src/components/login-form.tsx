@@ -35,7 +35,10 @@ export function LoginForm() {
       {error && (
         <Alert variant="destructive">
           <AlertTitle>Could not sign in</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            <p>{error}</p>
+            <p className="mt-2">Check the email and password, then use Sign in to try again. If this keeps happening, contact HealthCore support.</p>
+          </AlertDescription>
         </Alert>
       )}
       <div className="space-y-1.5">
