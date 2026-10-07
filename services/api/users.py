@@ -7,7 +7,7 @@ from typing import Any
 from tinydb import Query
 
 from db import profiles_table, users_table
-from security import hash_password
+from security import create_access_token, hash_password, verify_password
 
 
 class Role(str, Enum):
@@ -43,6 +43,15 @@ def get_user_by_id(user_id: int) -> dict[str, Any] | None:
 
 def get_user_by_email(email: str) -> dict[str, Any] | None:
     return users_table().get(Query().email == email)
+
+
+def authenticate(email: str, password: str) -> str:
+    user = get_user_by_email(email)
+    if user is None or not user.get("is_active", False) or not password:
+        raise ValueError("Incorrect email or password")
+    if not verify_password(password, user["hashed_password"]):
+        raise ValueError("Incorrect email or password")
+    return create_access_token(user["id"])
 
 
 def update_user(user_id: int, changes: dict[str, Any]) -> dict[str, Any] | None:
