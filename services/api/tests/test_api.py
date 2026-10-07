@@ -7,7 +7,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-os.environ["TINYDB_PATH"] = str(Path(tempfile.mkdtemp()) / "tinydb.json")
+os.environ.setdefault("TINYDB_PATH", str(Path(tempfile.mkdtemp()) / "tinydb.json"))
 os.environ.setdefault("SECRET_KEY", "test-signing-secret")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 

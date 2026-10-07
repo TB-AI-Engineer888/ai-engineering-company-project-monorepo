@@ -8,8 +8,7 @@ from pydantic import BaseModel, Field
 from db import users_table
 from deps import get_current_user
 from profiles import create_profile, get_profile_by_user_id, public_profile, update_profile
-from security import create_access_token, verify_password
-from users import Role, create_user, delete_user, get_user_by_email, get_user_by_id, public_user, update_user
+from users import Role, authenticate, create_user, delete_user, get_user_by_id, public_user, update_user
 
 users_router = APIRouter(prefix="/users", tags=["users"])
 profiles_router = APIRouter(prefix="/profiles", tags=["profiles"])
@@ -132,12 +131,11 @@ async def login(request: Request) -> dict[str, str]:
         form = await request.form()
         email = str(form.get("email") or form.get("username") or "")
         password = str(form.get("password") or "")
-    user = get_user_by_email(email)
-    if user is None or not user.get("is_active", False) or not password:
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
-    if not verify_password(password, user["hashed_password"]):
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
-    return {"access_token": create_access_token(user["id"]), "token_type": "bearer"}
+    try:
+        token = authenticate(email, password)
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Incorrect email or password") from exc
+    return {"access_token": token, "token_type": "bearer"}
 
 
 @auth_router.get("/me")
