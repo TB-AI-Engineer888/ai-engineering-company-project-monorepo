@@ -1,21 +1,60 @@
 from __future__ import annotations
 
+import importlib.util
+import os
+import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
+
+_API_DIR = Path(__file__).resolve().parent
+_SERVICES_DIR = _API_DIR.parent
+_ROOT = _API_DIR.parents[1]
+for _path in (str(_ROOT / "shared"), str(_SERVICES_DIR), str(_API_DIR)):
+    if _path in sys.path:
+        sys.path.remove(_path)
+    sys.path.insert(0, _path)
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
+from sqlmodel import Session
 
 from incident_analyzer import AnalysisError, AnalysisResult, analyze_csv_bytes, metrics_to_csv
 
+from database import get_engine, init_schema
 from deps import get_current_user
 from routers import auth_router, profiles_router, users_router
+from seed_inventory import seed_inventory
 
-app = FastAPI(title="HealthCore Incident Analyzer API", version="1.0.0")
+
+def _load_inventory_router():
+    path = _SERVICES_DIR / "routers" / "inventory.py"
+    spec = importlib.util.spec_from_file_location("healthcore_inventory_router", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load services/routers/inventory.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.inventory_router
+
+
+inventory_router = _load_inventory_router()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    if os.environ.get("DATABASE_URL", "").strip():
+        init_schema()
+        with Session(get_engine()) as session:
+            seed_inventory(session)
+    yield
+
+
+app = FastAPI(title="HealthCore Incident Analyzer API", version="1.0.0", lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(profiles_router)
+app.include_router(inventory_router)
 
 app.add_middleware(
     CORSMiddleware,

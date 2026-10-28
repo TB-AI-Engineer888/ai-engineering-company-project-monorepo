@@ -9,9 +9,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SHARED = ROOT / "shared"
 API_DIR = Path(__file__).resolve().parent
-for path in (str(SHARED), str(API_DIR)):
-    if path not in sys.path:
-        sys.path.insert(0, path)
+SERVICES_DIR = API_DIR.parent
+for path in (str(SHARED), str(SERVICES_DIR), str(API_DIR)):
+    if path in sys.path:
+        sys.path.remove(path)
+    sys.path.insert(0, path)
 
 import uvicorn
 
