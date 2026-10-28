@@ -1,3 +1,24 @@
+# HealthCore — Milestone 5: Inventory API
+
+Review only this work. Company: HealthCore.
+
+| What | Where |
+| --- | --- |
+| Briefing | `05-backend-inventory-orm/healthcore-BRIEFING.md` |
+| Routes, all under `/inventory` | `services/routers/inventory.py` |
+| Tables: MedicalSupply, SupplyDelivery, SupplyConsumption | `services/models.py` |
+| Request and response schemas | `services/schemas.py` |
+| TinyDB for login, Supabase for inventory | `services/database.py` |
+| Stock math | `services/inventory_stock.py` |
+| Seed data | `services/seed_inventory.py` |
+| App entry | `services/api/main.py` |
+
+Routes: `GET /inventory/products`, `POST /inventory/products`, `GET /inventory/products/{id}`, `POST /inventory/orders/inbound`, `POST /inventory/orders/outbound`, `GET /inventory/orders`.
+
+Stock is deliveries minus consumptions. It is not stored. Login stays in TinyDB. Inventory stays in Supabase.
+
+---
+
 # AI Engineering Company Project — Student Template
 
 [![4Geeks Academy](https://img.shields.io/badge/4Geeks-Academy-blue)](https://4geeksacademy.com)

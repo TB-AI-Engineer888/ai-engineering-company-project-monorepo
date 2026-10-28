@@ -1,3 +1,15 @@
+# HealthCore inventory
+
+The Milestone 5 API lives here.
+
+- `routers/inventory.py` — `/inventory` routes
+- `models.py` — MedicalSupply, SupplyDelivery, SupplyConsumption
+- `schemas.py` — request and response models
+- `database.py` — TinyDB and Supabase
+- `inventory_stock.py` — computed stock
+- `seed_inventory.py` — HealthCore seed records
+- `api/main.py` — existing FastAPI app, inventory router registered
+
 # `services` folder
 
 This folder contains **all the backend services** (APIs and background workers) related to the company for the cross-functional AI Engineering project.
