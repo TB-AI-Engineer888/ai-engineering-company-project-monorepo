@@ -1,6 +1,6 @@
 # HealthCore inventory
 
-The Milestone 5 API lives here.
+Built work: https://github.com/TB-AI-Engineer888/ai-engineering-company-project-monorepo/commit/c909665
 
 - `routers/inventory.py` — `/inventory` routes
 - `models.py` — MedicalSupply, SupplyDelivery, SupplyConsumption

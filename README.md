@@ -1,6 +1,8 @@
 # HealthCore — Milestone 5: Inventory API
 
-Review only this work. Company: HealthCore.
+Built work: https://github.com/TB-AI-Engineer888/ai-engineering-company-project-monorepo/commit/c909665
+
+Company: HealthCore. That address is the inventory API only.
 
 | What | Where |
 | --- | --- |
