@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
         source: "/profiles/:path*",
         destination: `${apiOrigin}/profiles/:path*`,
       },
+      {
+        source: "/inventory/:path*",
+        destination: `${apiOrigin}/inventory/:path*`,
+      },
     ];
   },
 };

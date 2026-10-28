@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleUser, FileBarChart, HeartPulse, LayoutDashboard } from "lucide-react";
+import { CircleUser, ClipboardList, FileBarChart, HeartPulse, LayoutDashboard, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Operations overview", icon: LayoutDashboard },
+  { href: "/backoffice/inventory/products", label: "Medical supplies", icon: Package },
+  { href: "/backoffice/inventory/orders", label: "Supply orders", icon: ClipboardList },
   { href: "/incidents", label: "Incident analyzer", icon: FileBarChart },
   { href: "/account/profile", label: "Account profile", icon: CircleUser },
 ];
@@ -16,6 +18,10 @@ const NAV = [
 const PUBLIC_PATHS = new Set(["/login", "/register"]);
 
 function sectionTitle(pathname: string) {
+  if (pathname.startsWith("/backoffice/inventory/orders/inbound")) return "Log a delivery";
+  if (pathname.startsWith("/backoffice/inventory/orders/outbound")) return "Log a consumption";
+  if (pathname.startsWith("/backoffice/inventory/orders")) return "Supply orders";
+  if (pathname.startsWith("/backoffice/inventory")) return "Medical supplies";
   if (pathname.startsWith("/incidents")) return "Incident analyzer";
   if (pathname.startsWith("/account")) return "Account";
   return "Operations overview";
@@ -50,7 +56,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               const active =
                 item.href === "/"
                   ? pathname === "/"
-                  : pathname.startsWith(item.href);
+                  : item.href === "/backoffice/inventory/orders"
+                    ? pathname === item.href
+                    : pathname.startsWith(item.href);
               const Icon = item.icon;
               return (
                 <Link

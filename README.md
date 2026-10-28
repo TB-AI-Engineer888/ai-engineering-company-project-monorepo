@@ -14,6 +14,10 @@ Company: HealthCore. This is the project.
 | Stock math | `services/inventory_stock.py` |
 | Seed data | `services/seed_inventory.py` |
 | App entry | `services/api/main.py` |
+| Medical supplies page | `uis/backoffice` route `/backoffice/inventory/products` |
+| Delivery form | `/backoffice/inventory/orders/inbound` |
+| Consumption form | `/backoffice/inventory/orders/outbound` |
+| Order history | `/backoffice/inventory/orders` |
 
 Routes: `GET /inventory/products`, `POST /inventory/products`, `GET /inventory/products/{id}`, `POST /inventory/orders/inbound`, `POST /inventory/orders/outbound`, `GET /inventory/orders`.
 
