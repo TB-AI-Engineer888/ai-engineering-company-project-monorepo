@@ -37,7 +37,7 @@ export function InboundOrderForm() {
       setQuantity("");
       setVendorName("");
       setClinicId("");
-      setConfirmation(`Delivery recorded. ${saved.quantity} units are now on the supply record.`);
+      setConfirmation(`${saved.quantity} units are now on the supply record.`);
     } catch (caught) {
       setFormError(caught instanceof ApiError ? caught.message : "Could not record this delivery.");
     } finally {

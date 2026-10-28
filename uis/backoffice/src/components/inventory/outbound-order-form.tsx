@@ -72,7 +72,7 @@ export function OutboundOrderForm() {
       setClinicId("");
       const refreshed = await readMedicalSupply(saved.supply_id);
       setStock({ id: String(saved.supply_id), available: refreshed.current_stock });
-      setConfirmation(`Consumption recorded. ${refreshed.current_stock} units remain.`);
+      setConfirmation(`${refreshed.current_stock} units remain.`);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 400) {
         setQuantityError(caught.message);
