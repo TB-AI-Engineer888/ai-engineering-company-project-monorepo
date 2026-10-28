@@ -6,3 +6,6 @@ services/api/data/
 .coverage
 htmlcov/
 coverage/
+.env
+**/.env
+

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
+from uuid import uuid4
 
 from tinydb import Query
 
@@ -20,6 +21,17 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def ensure_user_uuid(record: dict[str, Any] | None) -> dict[str, Any] | None:
+    if record is None:
+        return None
+    if record.get("uuid"):
+        return record
+    user_uuid = str(uuid4())
+    users_table().update({"uuid": user_uuid}, doc_ids=[record["id"]])
+    record["uuid"] = user_uuid
+    return record
+
+
 def create_user(email: str, password: str, role: Role = Role.user) -> dict[str, Any]:
     table = users_table()
     if table.get(Query().email == email):
@@ -31,6 +43,7 @@ def create_user(email: str, password: str, role: Role = Role.user) -> dict[str, 
             "is_active": True,
             "role": role.value,
             "created_at": _now(),
+            "uuid": str(uuid4()),
         }
     )
     table.update({"id": doc_id}, doc_ids=[doc_id])
@@ -38,11 +51,11 @@ def create_user(email: str, password: str, role: Role = Role.user) -> dict[str, 
 
 
 def get_user_by_id(user_id: int) -> dict[str, Any] | None:
-    return users_table().get(doc_id=user_id)
+    return ensure_user_uuid(users_table().get(doc_id=user_id))
 
 
 def get_user_by_email(email: str) -> dict[str, Any] | None:
-    return users_table().get(Query().email == email)
+    return ensure_user_uuid(users_table().get(Query().email == email))
 
 
 def authenticate(email: str, password: str) -> str:
@@ -83,4 +96,5 @@ def public_user(record: dict[str, Any]) -> dict[str, Any]:
         "is_active": record["is_active"],
         "role": record["role"],
         "created_at": record["created_at"],
+        "uuid": record.get("uuid"),
     }
