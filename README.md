@@ -1,8 +1,8 @@
-# HealthCore — Milestone 5: Inventory API
+# Milestone — Backend: Inventory Management with ORM & Dual Database
 
-Built work: https://github.com/TB-AI-Engineer888/ai-engineering-company-project-monorepo/commit/c909665
+https://github.com/TB-AI-Engineer888/ai-engineering-company-project-monorepo
 
-Company: HealthCore. That address is the inventory API only.
+Company: HealthCore. This is the project.
 
 | What | Where |
 | --- | --- |

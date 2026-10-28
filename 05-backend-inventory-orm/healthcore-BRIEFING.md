@@ -1,4 +1,4 @@
-# BRIEFING — Milestone 5: Backend Inventory Management
+# Milestone — Backend: Inventory Management with ORM & Dual Database
 
 Company: HealthCore
 Path: 05-backend-inventory-orm/healthcore-BRIEFING.md

@@ -1,6 +1,6 @@
-# HealthCore inventory
+# Milestone — Backend: Inventory Management with ORM & Dual Database
 
-Built work: https://github.com/TB-AI-Engineer888/ai-engineering-company-project-monorepo/commit/c909665
+https://github.com/TB-AI-Engineer888/ai-engineering-company-project-monorepo
 
 - `routers/inventory.py` — `/inventory` routes
 - `models.py` — MedicalSupply, SupplyDelivery, SupplyConsumption
