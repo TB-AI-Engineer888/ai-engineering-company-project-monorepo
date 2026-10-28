@@ -34,6 +34,7 @@ export function InboundOrderForm() {
         vendor_name: vendorName.trim(),
         clinic_id: Number(clinicId),
       });
+      setSupplyId("");
       setQuantity("");
       setVendorName("");
       setClinicId("");
