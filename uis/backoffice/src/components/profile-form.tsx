@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/form-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/http";
@@ -104,44 +105,12 @@ export function ProfileForm() {
         <Label htmlFor="email">Email</Label>
         <Input id="email" value={email} readOnly />
       </div>
-      <ProfileField id="name" label="Name" autoComplete="name" value={profile.name} error={errors.name} onChange={(value) => update("name", value)} />
-      <ProfileField id="phone" label="Phone" type="tel" autoComplete="tel" value={profile.phone} error={errors.phone} onChange={(value) => update("phone", value)} />
-      <ProfileField id="address" label="Address" autoComplete="street-address" value={profile.address} error={errors.address} onChange={(value) => update("address", value)} />
+      <FormField id="name" label="Name" autoComplete="name" value={profile.name} error={errors.name} onChange={(value) => update("name", value)} />
+      <FormField id="phone" label="Phone" type="tel" autoComplete="tel" value={profile.phone} error={errors.phone} onChange={(value) => update("phone", value)} />
+      <FormField id="address" label="Address" autoComplete="street-address" value={profile.address} error={errors.address} onChange={(value) => update("address", value)} />
       <Button type="submit" disabled={pending}>
         {pending ? "Saving…" : "Save profile"}
       </Button>
     </form>
-  );
-}
-
-function ProfileField({
-  id,
-  label,
-  error,
-  onChange,
-  ...props
-}: React.ComponentProps<"input"> & {
-  id: string;
-  label: string;
-  error?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        name={id}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${id}-error` : undefined}
-        onChange={(event) => onChange(event.target.value)}
-        {...props}
-      />
-      {error ? (
-        <p id={`${id}-error`} className="text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
-    </div>
   );
 }

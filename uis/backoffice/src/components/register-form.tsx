@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/form-field";
 import { ApiError } from "@/lib/http";
 import { login, registerAccount } from "@/lib/auth";
 
@@ -80,7 +79,7 @@ export function RegisterForm() {
           <AlertDescription>{formError}</AlertDescription>
         </Alert>
       )}
-      <Field
+      <FormField
         id="email"
         label="Email"
         type="email"
@@ -89,7 +88,7 @@ export function RegisterForm() {
         error={errors.email}
         onChange={(value) => update("email", value)}
       />
-      <Field
+      <FormField
         id="password"
         label="Password"
         type="password"
@@ -98,7 +97,7 @@ export function RegisterForm() {
         error={errors.password}
         onChange={(value) => update("password", value)}
       />
-      <Field
+      <FormField
         id="name"
         label="Name"
         autoComplete="name"
@@ -107,7 +106,7 @@ export function RegisterForm() {
         onChange={(value) => update("name", value)}
         optional
       />
-      <Field
+      <FormField
         id="phone"
         label="Phone"
         type="tel"
@@ -117,7 +116,7 @@ export function RegisterForm() {
         onChange={(value) => update("phone", value)}
         optional
       />
-      <Field
+      <FormField
         id="address"
         label="Address"
         autoComplete="street-address"
@@ -136,50 +135,5 @@ export function RegisterForm() {
         </Link>
       </p>
     </form>
-  );
-}
-
-function Field({
-  id,
-  label,
-  error,
-  hint,
-  optional,
-  onChange,
-  ...props
-}: React.ComponentProps<"input"> & {
-  id: string;
-  label: string;
-  error?: string;
-  hint?: string;
-  optional?: boolean;
-  onChange: (value: string) => void;
-}) {
-  const describedBy = [error ? `${id}-error` : null, hint ? `${id}-hint` : null].filter(Boolean).join(" ") || undefined;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-baseline justify-between gap-3">
-        <Label htmlFor={id}>{label}</Label>
-        {optional ? <span className="text-xs text-muted-foreground">Optional</span> : null}
-      </div>
-      <Input
-        id={id}
-        name={id}
-        aria-invalid={Boolean(error)}
-        aria-describedby={describedBy}
-        onChange={(event) => onChange(event.target.value)}
-        {...props}
-      />
-      {hint ? (
-        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={`${id}-error`} className="text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
-    </div>
   );
 }
