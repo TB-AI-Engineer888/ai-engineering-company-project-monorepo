@@ -1,3 +1,17 @@
+# Frontend Performance Audit
+
+Search for **Frontend Performance Audit**. The deliverables are on `main`:
+
+| What | Where |
+| --- | --- |
+| Initial scores and root causes | [AUDIT.md](./AUDIT.md) |
+| Corrections and before/after scores | [REPORT.md](./REPORT.md) |
+| Lighthouse screenshots | [audit/before](./audit/before) and [audit/after](./audit/after) |
+
+The public site is `uis/healthcore-website`. The backoffice is `uis/backoffice`. The shared field added for this audit is `uis/backoffice/src/components/form-field.tsx`.
+
+---
+
 # Milestone — Backend: Inventory Management with ORM & Dual Database
 
 https://github.com/TB-AI-Engineer888/ai-engineering-company-project-monorepo
