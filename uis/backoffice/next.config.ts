@@ -1,11 +1,15 @@
 import type { NextConfig } from "next";
 
 const apiOrigin = process.env.API_ORIGIN ?? "http://127.0.0.1:43180";
+const extraDevOrigins = (process.env.ALLOWED_DEV_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const nextConfig: NextConfig = {
   agentRules: false,
   devIndicators: false,
-  allowedDevOrigins: ["127.0.0.1", "localhost"],
+  allowedDevOrigins: ["127.0.0.1", "localhost", ...extraDevOrigins],
   async rewrites() {
     return [
       {
