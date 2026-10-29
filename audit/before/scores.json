@@ -1,0 +1,258 @@
+[
+  {
+    "name": "website-home-desktop",
+    "label": "Corporate site, home",
+    "url": "http://127.0.0.1:43111/index.html",
+    "phase": "before",
+    "requestedUrl": "http://127.0.0.1:43111/index.html",
+    "finalUrl": "http://127.0.0.1:43111/index.html",
+    "fetchTime": "2026-10-29T01:52:29.526Z",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 100,
+      "accessibility": 100,
+      "bestPractices": 96,
+      "seo": 100
+    },
+    "metrics": {
+      "ttfbMs": 2,
+      "fcpMs": 423.76160000000004,
+      "lcpMs": 423.76160000000004,
+      "tbtMs": 0,
+      "cls": 0.0008477008329595178,
+      "siMs": 423.76160000000004
+    },
+    "lcpElement": null,
+    "opportunities": [
+      {
+        "id": "unminified-css",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Minify CSS",
+        "display": "Est savings of 9 KiB",
+        "numericValue": 0
+      },
+      {
+        "id": "unminified-javascript",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Minify JavaScript",
+        "display": "Est savings of 6 KiB",
+        "numericValue": 0
+      },
+      {
+        "id": "unused-css-rules",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Reduce unused CSS",
+        "display": "Est savings of 20 KiB",
+        "numericValue": 0
+      }
+    ]
+  },
+  {
+    "name": "website-home-mobile",
+    "label": "Corporate site, home",
+    "url": "http://127.0.0.1:43111/index.html",
+    "phase": "before",
+    "requestedUrl": "http://127.0.0.1:43111/index.html",
+    "finalUrl": "http://127.0.0.1:43111/index.html",
+    "fetchTime": "2026-10-29T01:52:36.838Z",
+    "formFactor": "mobile",
+    "scores": {
+      "performance": 100,
+      "accessibility": 100,
+      "bestPractices": 96,
+      "seo": 100
+    },
+    "metrics": {
+      "ttfbMs": 1,
+      "fcpMs": 1518.9164999999998,
+      "lcpMs": 1518.9164999999998,
+      "tbtMs": 0,
+      "cls": 0.0004733980648460019,
+      "siMs": 1518.9164999999998
+    },
+    "lcpElement": null,
+    "opportunities": [
+      {
+        "id": "unminified-css",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Minify CSS",
+        "display": "Est savings of 9 KiB",
+        "numericValue": 0
+      },
+      {
+        "id": "unminified-javascript",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Minify JavaScript",
+        "display": "Est savings of 6 KiB",
+        "numericValue": 0
+      },
+      {
+        "id": "unused-css-rules",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Reduce unused CSS",
+        "display": "Est savings of 21 KiB",
+        "numericValue": 0
+      }
+    ]
+  },
+  {
+    "name": "website-application-desktop",
+    "label": "Corporate site, patient enquiry",
+    "url": "http://127.0.0.1:43111/application.html",
+    "phase": "before",
+    "requestedUrl": "http://127.0.0.1:43111/application.html",
+    "finalUrl": "http://127.0.0.1:43111/application.html",
+    "fetchTime": "2026-10-29T01:52:43.967Z",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 100,
+      "accessibility": 100,
+      "bestPractices": 96,
+      "seo": 100
+    },
+    "metrics": {
+      "ttfbMs": 0,
+      "fcpMs": 419.476,
+      "lcpMs": 419.476,
+      "tbtMs": 0,
+      "cls": 0.002332554616241412,
+      "siMs": 419.476
+    },
+    "lcpElement": null,
+    "opportunities": [
+      {
+        "id": "unminified-css",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Minify CSS",
+        "display": "Est savings of 9 KiB",
+        "numericValue": 0
+      },
+      {
+        "id": "unminified-javascript",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Minify JavaScript",
+        "display": "Est savings of 6 KiB",
+        "numericValue": 0
+      },
+      {
+        "id": "unused-css-rules",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Reduce unused CSS",
+        "display": "Est savings of 17 KiB",
+        "numericValue": 0
+      }
+    ]
+  },
+  {
+    "name": "website-application-mobile",
+    "label": "Corporate site, patient enquiry",
+    "url": "http://127.0.0.1:43111/application.html",
+    "phase": "before",
+    "requestedUrl": "http://127.0.0.1:43111/application.html",
+    "finalUrl": "http://127.0.0.1:43111/application.html",
+    "fetchTime": "2026-10-29T01:52:51.161Z",
+    "formFactor": "mobile",
+    "scores": {
+      "performance": 100,
+      "accessibility": 100,
+      "bestPractices": 96,
+      "seo": 100
+    },
+    "metrics": {
+      "ttfbMs": 0,
+      "fcpMs": 1522.3446999999999,
+      "lcpMs": 1522.3446999999999,
+      "tbtMs": 0,
+      "cls": 0.01616933554536539,
+      "siMs": 1522.3446999999999
+    },
+    "lcpElement": null,
+    "opportunities": [
+      {
+        "id": "unminified-css",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Minify CSS",
+        "display": "Est savings of 9 KiB",
+        "numericValue": 0
+      },
+      {
+        "id": "unminified-javascript",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Minify JavaScript",
+        "display": "Est savings of 6 KiB",
+        "numericValue": 0
+      },
+      {
+        "id": "unused-css-rules",
+        "group": "diagnostics",
+        "score": 0.5,
+        "title": "Reduce unused CSS",
+        "display": "Est savings of 18 KiB",
+        "numericValue": 0
+      }
+    ]
+  },
+  {
+    "name": "backoffice-dashboard-desktop",
+    "label": "Backoffice, operations overview",
+    "url": "http://127.0.0.1:43123/",
+    "phase": "before",
+    "requestedUrl": "http://127.0.0.1:43123/",
+    "finalUrl": "http://127.0.0.1:43123/",
+    "fetchTime": "2026-10-29T01:52:58.344Z",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 100,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "seo": 100
+    },
+    "metrics": {
+      "ttfbMs": 5,
+      "fcpMs": 175.1292896911621,
+      "lcpMs": 256.9626084655762,
+      "tbtMs": 0,
+      "cls": 0,
+      "siMs": 175.1292896911621
+    },
+    "lcpElement": null,
+    "opportunities": []
+  },
+  {
+    "name": "backoffice-dashboard-mobile",
+    "label": "Backoffice, operations overview",
+    "url": "http://127.0.0.1:43123/",
+    "phase": "before",
+    "requestedUrl": "http://127.0.0.1:43123/",
+    "finalUrl": "http://127.0.0.1:43123/",
+    "fetchTime": "2026-10-29T01:53:05.522Z",
+    "formFactor": "mobile",
+    "scores": {
+      "performance": 99,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "seo": 100
+    },
+    "metrics": {
+      "ttfbMs": 2,
+      "fcpMs": 624.37145,
+      "lcpMs": 917.1136084655761,
+      "tbtMs": 98,
+      "cls": 0,
+      "siMs": 624.37145
+    },
+    "lcpElement": null,
+    "opportunities": []
+  }
+]
