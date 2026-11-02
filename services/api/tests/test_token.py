@@ -21,8 +21,9 @@ def test_valid_token_resolves_to_the_user_and_profile() -> None:
     caller = get_current_user(token)
     account = read_me(caller)
     assert caller["id"] == user["id"]
-    assert account["email"] == "ada@healthcore.test"
-    assert account["profile"]["name"] == "Ada"
+    assert account.email == "ada@healthcore.test"
+    assert account.profile is not None
+    assert account.profile.name == "Ada"
 
 
 def test_token_without_a_subject_is_rejected() -> None:
@@ -82,5 +83,5 @@ def test_inactive_or_deleted_user_token_is_rejected() -> None:
 def test_me_without_a_profile_returns_no_profile() -> None:
     user = create_user("ada@healthcore.test", "correct-horse")
     account = read_me(get_user_by_id(user["id"]))
-    assert account["profile"] is None
-    assert account["role"] == "user"
+    assert account.profile is None
+    assert account.role == "user"
