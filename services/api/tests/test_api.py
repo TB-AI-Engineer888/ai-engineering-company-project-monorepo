@@ -124,6 +124,8 @@ def test_auth_flow_and_route_protection() -> None:
     )
     assert registered.status_code == 201
     assert registered.json()["role"] == "user"
+    assert "email" not in registered.json()
+    assert "password" not in registered.json()
     assert "hashed_password" not in registered.json()
     assert registered.json()["profile"]["name"] == "Owner"
 
@@ -154,6 +156,8 @@ def test_auth_flow_and_route_protection() -> None:
     stored = client.get("/users", headers=headers)
     assert stored.status_code == 200
     assert all("hashed_password" not in row for row in stored.json())
+    assert all("email" not in row for row in stored.json())
+    assert all(set(row) == {"id", "role", "uuid"} for row in stored.json())
 
     form_login = client.post(
         "/auth/login",
