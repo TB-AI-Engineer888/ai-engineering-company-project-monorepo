@@ -20,8 +20,15 @@ export type RegisterInput = {
   address: string;
 };
 
-export async function registerAccount(input: RegisterInput): Promise<Account> {
-  return apiRequest<Account>("/users", {
+export type RegisterResult = {
+  id: number;
+  role: string;
+  is_active: boolean;
+  profile: Profile;
+};
+
+export async function registerAccount(input: RegisterInput): Promise<RegisterResult> {
+  return apiRequest<RegisterResult>("/users", {
     method: "POST",
     body: JSON.stringify(input),
   });

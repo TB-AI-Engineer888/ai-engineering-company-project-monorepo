@@ -124,6 +124,7 @@ def test_auth_flow_and_route_protection() -> None:
     )
     assert registered.status_code == 201
     assert registered.json()["role"] == "user"
+    assert "email" not in registered.json()
     assert "hashed_password" not in registered.json()
     assert registered.json()["profile"]["name"] == "Owner"
 

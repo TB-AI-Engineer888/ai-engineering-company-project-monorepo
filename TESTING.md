@@ -19,7 +19,7 @@ npx jest --coverage
 
 `tests/test_register.py`
 
-- Happy path: a new email and password create an active account and a profile. The password hash is not returned.
+- Happy path: a new email and password create an active account and a profile. The password hash and email are not returned.
 - Edge case: the stored role is `user`.
 - Failure: a duplicate email is rejected. An empty password is rejected.
 
@@ -62,7 +62,7 @@ Authentication module (`security.py`, `users.py`, `deps.py`): 100%.
 
 `tests/test_users.py` and `tests/test_profiles.py`
 
-- Users: list and read hide the password hash. Editing another user is forbidden. An admin can change role and password. A member cannot change role. A duplicate email on update is rejected. Update or delete of a missing user fails. Deleting a user removes the profile.
+- Users: list returns `id`, `role`, and `uuid` only. Read and write confirmation hide the password hash. Editing another user is forbidden. An admin can change role and password. A member cannot change role. A duplicate email on update is rejected. Update or delete of a missing user fails. Deleting a user removes the profile.
 - Profiles: read and update keep fields that were not sent. An empty name can be saved. A missing profile is rejected.
 
 `users.py` and `profiles.py` statement coverage: 100%.

@@ -5,7 +5,6 @@ import os
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
 
 _API_DIR = Path(__file__).resolve().parent
 _SERVICES_DIR = _API_DIR.parent
@@ -24,6 +23,7 @@ from incident_analyzer import AnalysisError, AnalysisResult, analyze_csv_bytes, 
 
 from database import get_engine, init_schema
 from deps import get_current_user
+from response_schemas import AnalysisResultRead, CSV_FILE_RESPONSE, HealthStatus, ServiceInfo
 from routers import auth_router, profiles_router, users_router
 from seed_inventory import seed_inventory
 
@@ -75,12 +75,17 @@ _ROOT = Path(__file__).resolve().parents[2]
 _SAMPLE_CSV = _ROOT / "scripts" / "incidents-healthcore.csv"
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "healthcore-incident-api"}
+@app.get("/health", response_model=HealthStatus)
+def health() -> HealthStatus:
+    return HealthStatus(status="ok", service="healthcore-incident-api")
 
 
-@app.get("/api/incidents/sample", dependencies=[Depends(get_current_user)])
+@app.get(
+    "/api/incidents/sample",
+    response_class=FileResponse,
+    responses=CSV_FILE_RESPONSE,
+    dependencies=[Depends(get_current_user)],
+)
 def sample_csv() -> FileResponse:
     if not _SAMPLE_CSV.is_file():
         raise HTTPException(status_code=404, detail="Sample CSV is not available.")
@@ -91,8 +96,12 @@ def sample_csv() -> FileResponse:
     )
 
 
-@app.post("/api/incidents/analyze", dependencies=[Depends(get_current_user)])
-async def analyze_incidents(file: UploadFile = File(...)) -> JSONResponse:
+@app.post(
+    "/api/incidents/analyze",
+    response_model=AnalysisResultRead,
+    dependencies=[Depends(get_current_user)],
+)
+async def analyze_incidents(file: UploadFile = File(...)) -> AnalysisResultRead:
     global _LAST_RESULT, _LAST_CSV
 
     filename = file.filename or "upload.csv"
@@ -120,10 +129,15 @@ async def analyze_incidents(file: UploadFile = File(...)) -> JSONResponse:
 
     _LAST_RESULT = result
     _LAST_CSV = metrics_to_csv(result)
-    return JSONResponse(result.to_dict())
+    return AnalysisResultRead.model_validate(result.to_dict())
 
 
-@app.get("/api/incidents/results/export", dependencies=[Depends(get_current_user)])
+@app.get(
+    "/api/incidents/results/export",
+    response_class=Response,
+    responses=CSV_FILE_RESPONSE,
+    dependencies=[Depends(get_current_user)],
+)
 def export_results() -> Response:
     if _LAST_CSV is None or _LAST_RESULT is None:
         raise HTTPException(
@@ -136,23 +150,27 @@ def export_results() -> Response:
     return Response(content=_LAST_CSV, media_type="text/csv; charset=utf-8", headers=headers)
 
 
-@app.get("/api/incidents/results", dependencies=[Depends(get_current_user)])
-def last_results() -> dict[str, Any]:
+@app.get(
+    "/api/incidents/results",
+    response_model=AnalysisResultRead,
+    dependencies=[Depends(get_current_user)],
+)
+def last_results() -> AnalysisResultRead:
     if _LAST_RESULT is None:
         raise HTTPException(
             status_code=404,
             detail="No analysis is available yet. Upload a CSV to POST /api/incidents/analyze first.",
         )
-    return _LAST_RESULT.to_dict()
+    return AnalysisResultRead.model_validate(_LAST_RESULT.to_dict())
 
 
-@app.get("/", dependencies=[Depends(get_current_user)])
-def root() -> dict[str, str]:
-    return {
-        "service": "HealthCore Incident Analyzer API",
-        "analyze": "POST /api/incidents/analyze",
-        "export": "GET /api/incidents/results/export",
-    }
+@app.get("/", response_model=ServiceInfo, dependencies=[Depends(get_current_user)])
+def root() -> ServiceInfo:
+    return ServiceInfo(
+        service="HealthCore Incident Analyzer API",
+        analyze="POST /api/incidents/analyze",
+        export="GET /api/incidents/results/export",
+    )
 
 
 @app.exception_handler(HTTPException)
