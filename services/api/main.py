@@ -79,7 +79,7 @@ logger = logging.getLogger("api.timing")
 async def timing_middleware(request: Request, call_next):
     start = time.perf_counter()
     response = await call_next(request)
-    duration = (time.perf_counter() - start) * 1000  # ms
+    duration = (time.perf_counter() - start) * 1000
 
     logger.info(
         f"{request.method} {request.url.path} → {response.status_code} | {duration:.1f}ms"

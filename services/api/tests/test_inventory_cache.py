@@ -19,7 +19,7 @@ import database
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel
 
-import models  # noqa: F401
+import models
 from main import app
 from ttl_cache import inventory_cache
 

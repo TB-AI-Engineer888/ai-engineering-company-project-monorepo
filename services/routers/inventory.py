@@ -29,8 +29,6 @@ from schemas import (
 )
 from ttl_cache import inventory_cache
 
-# Shared clinic catalog. The body does not vary by staff member.
-# Writes below clear the prefix, and the TTL is the backstop.
 PRODUCTS_CACHE_KEY = "inventory:products"
 ORDERS_CACHE_KEY = "inventory:orders"
 PRODUCTS_TTL_SECONDS = 60

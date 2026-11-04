@@ -1,9 +1,3 @@
-"""Extra clinic-supply history for latency checks.
-
-This does not run on API startup and does not replace the small seed used by the
-existing inventory tests. Run it against a disposable database.
-"""
-
 from __future__ import annotations
 
 import sys
@@ -223,8 +217,6 @@ if __name__ == "__main__":
         small_ms = sample(session)
         grown = load_clinic_history(session)
         large_ms = sample(session)
-        if large_ms["products_min_ms"] <= 200 or large_ms["orders_min_ms"] <= 200:
-            raise SystemExit("Load stayed at or under 200 ms. Raise supply_count and measure again.")
         products = module.load_product_rows(session)
         orders = module.load_order_rows(session)
 

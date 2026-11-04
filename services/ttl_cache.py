@@ -6,8 +6,6 @@ from typing import Any
 
 
 class TtlCache:
-    """In-process cache. Every entry expires. A missing key and an expired key both return None."""
-
     def __init__(self) -> None:
         self._values: dict[str, tuple[float, Any]] = {}
         self._lock = threading.Lock()
