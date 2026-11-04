@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import logging
 import os
 import sys
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -15,7 +17,7 @@ for _path in (str(_ROOT / "shared"), str(_SERVICES_DIR), str(_API_DIR)):
         sys.path.remove(_path)
     sys.path.insert(0, _path)
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from sqlmodel import Session
@@ -34,6 +36,7 @@ def _load_inventory_router():
     if spec is None or spec.loader is None:
         raise RuntimeError("Unable to load services/routers/inventory.py")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module.inventory_router
 
@@ -68,6 +71,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+logger = logging.getLogger("api.timing")
+
+
+@app.middleware("http")
+async def timing_middleware(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration = (time.perf_counter() - start) * 1000  # ms
+
+    logger.info(
+        f"{request.method} {request.url.path} → {response.status_code} | {duration:.1f}ms"
+    )
+    return response
 
 _LAST_RESULT: AnalysisResult | None = None
 _LAST_CSV: str | None = None

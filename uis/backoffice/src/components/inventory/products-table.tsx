@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { categoryLabel } from "@/components/inventory/labels";
 import { useMedicalSupplies } from "@/components/inventory/use-medical-supplies";
-import { stockBand } from "@/lib/stock-level";
+import { compareSuppliesByNeed, stockBand } from "@/lib/stock-level";
 import { cn } from "@/lib/utils";
 
 const BAND_CLASS = {
@@ -30,6 +31,10 @@ const BAND_LABEL = {
 
 export function ProductsTable() {
   const { supplies, error, loading } = useMedicalSupplies();
+  const orderedSupplies = useMemo(
+    () => [...supplies].sort(compareSuppliesByNeed),
+    [supplies],
+  );
 
   if (loading) {
     return <p className="text-sm text-muted-foreground">Loading medical supplies…</p>;
@@ -61,7 +66,7 @@ export function ProductsTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {supplies.map((supply) => {
+        {orderedSupplies.map((supply) => {
           const band = stockBand(supply.current_stock);
           return (
             <TableRow key={supply.id}>

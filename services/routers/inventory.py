@@ -27,6 +27,15 @@ from schemas import (
     SupplyDeliveryCreate,
     SupplyDeliveryRead,
 )
+from ttl_cache import inventory_cache
+
+# Shared clinic catalog. The body does not vary by staff member.
+# Writes below clear the prefix, and the TTL is the backstop.
+PRODUCTS_CACHE_KEY = "inventory:products"
+ORDERS_CACHE_KEY = "inventory:orders"
+PRODUCTS_TTL_SECONDS = 60
+ORDERS_TTL_SECONDS = 45
+INVENTORY_CACHE_PREFIX = "inventory:"
 
 inventory_router = APIRouter(prefix="/inventory", tags=["inventory"])
 
@@ -56,11 +65,15 @@ def _supply_summary(supply: MedicalSupply) -> MedicalSupplySummary:
     )
 
 
-@inventory_router.get("/products", response_model=list[MedicalSupplyRead])
-def list_products(
-    _: dict = Depends(get_current_user),
-    session: Session = Depends(get_db),
-) -> list[MedicalSupplyRead]:
+def _remember(key: str, rows: list[MedicalSupplyRead] | list[InventoryOrderRead], ttl_seconds: int) -> None:
+    inventory_cache.set(key, [row.model_dump(mode="json") for row in rows], ttl_seconds)
+
+
+def _forget_inventory_cache() -> None:
+    inventory_cache.invalidate_prefix(INVENTORY_CACHE_PREFIX)
+
+
+def load_product_rows(session: Session) -> list[MedicalSupplyRead]:
     supplies = session.exec(select(MedicalSupply).order_by(MedicalSupply.id)).all()
     stocks = stock_by_supply_id(session)
     return [
@@ -69,111 +82,7 @@ def list_products(
     ]
 
 
-@inventory_router.post("/products", response_model=MedicalSupplyRead, status_code=201)
-def create_product(
-    body: MedicalSupplyCreate,
-    user: dict = Depends(get_current_user),
-    session: Session = Depends(get_db),
-) -> MedicalSupplyRead:
-    _require_uuid(user)
-    existing = session.exec(select(MedicalSupply).where(MedicalSupply.sku == body.sku)).first()
-    if existing is not None:
-        raise HTTPException(status_code=400, detail=f"SKU '{body.sku}' is already registered")
-    supply = MedicalSupply(
-        name=body.name,
-        sku=body.sku,
-        category=body.category,
-        unit=body.unit,
-        country=body.country,
-    )
-    session.add(supply)
-    session.commit()
-    session.refresh(supply)
-    return MedicalSupplyRead(**to_supply_read(supply, 0))
-
-
-@inventory_router.get("/products/{supply_id}", response_model=MedicalSupplyRead)
-def read_product(
-    supply_id: int,
-    _: dict = Depends(get_current_user),
-    session: Session = Depends(get_db),
-) -> MedicalSupplyRead:
-    supply = _get_supply(session, supply_id)
-    return MedicalSupplyRead(**to_supply_read(supply, current_stock(session, supply_id)))
-
-
-@inventory_router.post("/orders/inbound", response_model=SupplyDeliveryRead, status_code=201)
-def create_inbound_order(
-    body: SupplyDeliveryCreate,
-    user: dict = Depends(get_current_user),
-    session: Session = Depends(get_db),
-) -> SupplyDeliveryRead:
-    user_uuid = _require_uuid(user)
-    _get_supply(session, body.supply_id)
-    delivery = SupplyDelivery(
-        supply_id=body.supply_id,
-        quantity=body.quantity,
-        vendor_name=body.vendor_name,
-        clinic_id=body.clinic_id,
-        user_uuid=user_uuid,
-    )
-    session.add(delivery)
-    session.commit()
-    session.refresh(delivery)
-    return SupplyDeliveryRead(
-        id=delivery.id,
-        supply_id=delivery.supply_id,
-        quantity=delivery.quantity,
-        vendor_name=delivery.vendor_name,
-        clinic_id=delivery.clinic_id,
-        created_at=delivery.created_at,
-        user_uuid=delivery.user_uuid,
-    )
-
-
-@inventory_router.post("/orders/outbound", response_model=SupplyConsumptionRead, status_code=201)
-def create_outbound_order(
-    body: SupplyConsumptionCreate,
-    user: dict = Depends(get_current_user),
-    session: Session = Depends(get_db),
-) -> SupplyConsumptionRead:
-    user_uuid = _require_uuid(user)
-    supply = _get_supply(session, body.supply_id)
-    available = current_stock(session, body.supply_id)
-    if body.quantity > available:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Insufficient stock for supply '{supply.name}'. "
-                f"Available: {available}, requested: {body.quantity}."
-            ),
-        )
-    consumption = SupplyConsumption(
-        supply_id=body.supply_id,
-        quantity=body.quantity,
-        consumption_type=body.consumption_type,
-        clinic_id=body.clinic_id,
-        user_uuid=user_uuid,
-    )
-    session.add(consumption)
-    session.commit()
-    session.refresh(consumption)
-    return SupplyConsumptionRead(
-        id=consumption.id,
-        supply_id=consumption.supply_id,
-        quantity=consumption.quantity,
-        consumption_type=consumption.consumption_type,
-        clinic_id=consumption.clinic_id,
-        created_at=consumption.created_at,
-        user_uuid=consumption.user_uuid,
-    )
-
-
-@inventory_router.get("/orders", response_model=list[InventoryOrderRead])
-def list_orders(
-    _: dict = Depends(get_current_user),
-    session: Session = Depends(get_db),
-) -> list[InventoryOrderRead]:
+def load_order_rows(session: Session) -> list[InventoryOrderRead]:
     deliveries = session.exec(
         select(SupplyDelivery)
         .options(selectinload(SupplyDelivery.supply))
@@ -222,3 +131,132 @@ def list_orders(
         )
     orders.sort(key=lambda row: (row.created_at, row.order_kind, row.id))
     return orders
+
+
+@inventory_router.get("/products", response_model=list[MedicalSupplyRead])
+def list_products(
+    _: dict = Depends(get_current_user),
+    session: Session = Depends(get_db),
+) -> list[MedicalSupplyRead]:
+    cached = inventory_cache.get(PRODUCTS_CACHE_KEY)
+    if cached is not None:
+        return [MedicalSupplyRead.model_validate(row) for row in cached]
+    rows = load_product_rows(session)
+    _remember(PRODUCTS_CACHE_KEY, rows, PRODUCTS_TTL_SECONDS)
+    return rows
+
+
+@inventory_router.post("/products", response_model=MedicalSupplyRead, status_code=201)
+def create_product(
+    body: MedicalSupplyCreate,
+    user: dict = Depends(get_current_user),
+    session: Session = Depends(get_db),
+) -> MedicalSupplyRead:
+    _require_uuid(user)
+    existing = session.exec(select(MedicalSupply).where(MedicalSupply.sku == body.sku)).first()
+    if existing is not None:
+        raise HTTPException(status_code=400, detail=f"SKU '{body.sku}' is already registered")
+    supply = MedicalSupply(
+        name=body.name,
+        sku=body.sku,
+        category=body.category,
+        unit=body.unit,
+        country=body.country,
+    )
+    session.add(supply)
+    session.commit()
+    session.refresh(supply)
+    _forget_inventory_cache()
+    return MedicalSupplyRead(**to_supply_read(supply, 0))
+
+
+@inventory_router.get("/products/{supply_id}", response_model=MedicalSupplyRead)
+def read_product(
+    supply_id: int,
+    _: dict = Depends(get_current_user),
+    session: Session = Depends(get_db),
+) -> MedicalSupplyRead:
+    supply = _get_supply(session, supply_id)
+    return MedicalSupplyRead(**to_supply_read(supply, current_stock(session, supply_id)))
+
+
+@inventory_router.post("/orders/inbound", response_model=SupplyDeliveryRead, status_code=201)
+def create_inbound_order(
+    body: SupplyDeliveryCreate,
+    user: dict = Depends(get_current_user),
+    session: Session = Depends(get_db),
+) -> SupplyDeliveryRead:
+    user_uuid = _require_uuid(user)
+    _get_supply(session, body.supply_id)
+    delivery = SupplyDelivery(
+        supply_id=body.supply_id,
+        quantity=body.quantity,
+        vendor_name=body.vendor_name,
+        clinic_id=body.clinic_id,
+        user_uuid=user_uuid,
+    )
+    session.add(delivery)
+    session.commit()
+    session.refresh(delivery)
+    _forget_inventory_cache()
+    return SupplyDeliveryRead(
+        id=delivery.id,
+        supply_id=delivery.supply_id,
+        quantity=delivery.quantity,
+        vendor_name=delivery.vendor_name,
+        clinic_id=delivery.clinic_id,
+        created_at=delivery.created_at,
+        user_uuid=delivery.user_uuid,
+    )
+
+
+@inventory_router.post("/orders/outbound", response_model=SupplyConsumptionRead, status_code=201)
+def create_outbound_order(
+    body: SupplyConsumptionCreate,
+    user: dict = Depends(get_current_user),
+    session: Session = Depends(get_db),
+) -> SupplyConsumptionRead:
+    user_uuid = _require_uuid(user)
+    supply = _get_supply(session, body.supply_id)
+    available = current_stock(session, body.supply_id)
+    if body.quantity > available:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Insufficient stock for supply '{supply.name}'. "
+                f"Available: {available}, requested: {body.quantity}."
+            ),
+        )
+    consumption = SupplyConsumption(
+        supply_id=body.supply_id,
+        quantity=body.quantity,
+        consumption_type=body.consumption_type,
+        clinic_id=body.clinic_id,
+        user_uuid=user_uuid,
+    )
+    session.add(consumption)
+    session.commit()
+    session.refresh(consumption)
+    _forget_inventory_cache()
+    return SupplyConsumptionRead(
+        id=consumption.id,
+        supply_id=consumption.supply_id,
+        quantity=consumption.quantity,
+        consumption_type=consumption.consumption_type,
+        clinic_id=consumption.clinic_id,
+        created_at=consumption.created_at,
+        user_uuid=consumption.user_uuid,
+    )
+
+
+@inventory_router.get("/orders", response_model=list[InventoryOrderRead])
+def list_orders(
+    _: dict = Depends(get_current_user),
+    session: Session = Depends(get_db),
+) -> list[InventoryOrderRead]:
+    cached = inventory_cache.get(ORDERS_CACHE_KEY)
+    if cached is not None:
+        return [InventoryOrderRead.model_validate(row) for row in cached]
+    rows = load_order_rows(session)
+    _remember(ORDERS_CACHE_KEY, rows, ORDERS_TTL_SECONDS)
+    return rows
