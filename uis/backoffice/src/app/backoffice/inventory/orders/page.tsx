@@ -1,4 +1,11 @@
-import { OrdersTable } from "@/components/inventory/orders-table";
+import dynamic from "next/dynamic";
+
+const OrdersTable = dynamic(
+  () => import("@/components/inventory/orders-table").then((mod) => mod.OrdersTable),
+  {
+    loading: () => <p className="text-sm text-muted-foreground">Loading supply orders…</p>,
+  },
+);
 
 export default function InventoryOrdersPage() {
   return (
