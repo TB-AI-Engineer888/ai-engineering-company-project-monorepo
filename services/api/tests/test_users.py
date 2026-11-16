@@ -11,9 +11,12 @@ from users import Role, create_user, delete_user, update_user
 def test_list_and_read_return_public_users() -> None:
     user = create_user("ada@healthcore.test", "correct-horse")
     listed = list_users(user)
-    assert listed[0]["email"] == "ada@healthcore.test"
-    assert "hashed_password" not in listed[0]
-    assert read_user(user["id"], user)["id"] == user["id"]
+    assert listed[0].id == user["id"]
+    assert listed[0].role == "user"
+    assert listed[0].uuid == user["uuid"]
+    assert "email" not in listed[0].model_dump()
+    assert "hashed_password" not in listed[0].model_dump()
+    assert read_user(user["id"], user).id == user["id"]
 
 
 def test_unknown_user_is_not_found() -> None:
@@ -38,7 +41,7 @@ def test_admin_can_change_role_and_password() -> None:
     admin = create_user("admin@healthcore.test", "correct-horse", Role.admin)
     member = create_user("ada@healthcore.test", "correct-horse")
     updated = put_user(member["id"], UserUpdate(role=Role.manager, password="new-horse"), admin)
-    assert updated["role"] == "manager"
+    assert updated.role == "manager"
     from users import authenticate
 
     assert authenticate("ada@healthcore.test", "new-horse")
@@ -73,11 +76,11 @@ def test_update_and_delete_missing_user() -> None:
 def test_delete_removes_the_profile() -> None:
     user = create_user("ada@healthcore.test", "correct-horse")
     create_profile(user["id"], "Ada")
-    assert remove_user(user["id"], user) == {"status": "deleted"}
+    assert remove_user(user["id"], user).status == "deleted"
     assert get_profile_by_user_id(user["id"]) is None
 
 
 def test_empty_update_returns_the_current_user() -> None:
     user = create_user("ada@healthcore.test", "correct-horse")
     same = put_user(user["id"], UserUpdate(), user)
-    assert same["email"] == "ada@healthcore.test"
+    assert same.email == "ada@healthcore.test"

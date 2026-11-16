@@ -95,8 +95,8 @@ def test_outbound_over_stock_is_rejected_before_write() -> None:
 
 def test_orders_store_tinydb_user_uuid() -> None:
     headers = _auth_headers("uuid-check@healthcore.test")
-    me = client.get("/users", headers=headers).json()
-    tester = next(row for row in me if row["email"] == "uuid-check@healthcore.test")
+    me = client.get("/auth/me", headers=headers).json()
+    tester = me
     assert tester["uuid"]
     created_supply = client.post(
         "/inventory/products",
