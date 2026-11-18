@@ -667,7 +667,23 @@ The design files do not change the application. The implementation order below i
 9. Send browser events only to `POST /telemetry/events`, and reject server event types on that route.
 10. Point `emit` at a single spool. Mandatory events and the opportunities in this catalogue share it, so the later capture project has one contract.
 
-## 12. Counts
+## 12. Storage mapping
+
+`POST /telemetry/events` stores each event that passes `TelemetryEvent` and the draft-07 schema for its `event_type`. One invalid event does not drop the rest of the batch. `tags` is the `properties` object and nothing else, so the allowlist stays the only keys in that JSON. Envelope fields stay on the request and are not copied into `tags`.
+
+| Column | Source |
+| --- | --- |
+| `timestamp` | `timestamp` |
+| `service` | `backoffice`, because this route receives the browser batch |
+| `event_type` | `event_type` |
+| `level` | `error` for `client_exception_captured`; `warn` for `login_failed`, `session_expired`, `outbound_order_rejected`, `inventory_validation_failed`, `direct_stock_edit_rejected`, `supply_expiry_flagged`, and `stock_threshold_triggered`; `info` otherwise |
+| `value` | The first numeric allowlisted property among `quantity`, `duration_ms`, `row_count`, `days_to_expiry`, `time_on_form_seconds`, and `value`. Empty when the event has none |
+| `message` | The catalogue description for that `event_type`. Not a property, and not free text from the request |
+| `tags` | `properties` after the schema accepts them |
+
+The table is insert-only. Clinic, country, product category, and department stay inside `tags` under the names in this plan.
+
+## 13. Counts
 
 - Total events: 18
 - Mandatory, from the HealthCore briefing: 5
