@@ -146,7 +146,7 @@ Transform, on that deduped set:
    - `supply_consumption_count` — count of deduped `outbound_order_created` rows. This counts events, not `quantity`.
    - `critical_stockout_count` — count of deduped `stock_threshold_triggered` rows. The capture throttle (at most one event per clinic, product, and band per UTC day) is left as captured. This pipeline does not collapse those further, because the KPI is how many times the clinic ran below the minimum.
    - `expiry_risk_count` — count of deduped `supply_expiry_flagged` rows. That is the formula in the data-pipelines briefing: count of `supply_expiry_flagged` for the month. The capture throttle is at most one flag per `lot_id` and clinic per UTC day, so one batch can contribute a `receipt` flag and later `daily_sweep` flags in the same month. v1 counts those events. It does not collapse them to distinct `lot_id`.
-5. Emit a row for every clinic in the directory, including clinics with no events. Measures are 0. A zero row does not by itself separate a quiet clinic from a missed capture. The `Completed` row in `reporting.pipeline_runs` is the heartbeat. `silent_clinic_ids` on that row is the silence alert. A month with no `Completed` row is a pipeline that did not run.
+5. Emit a row for every clinic in the directory, including clinics with no events. Measures are 0.
 
 Load upserts those 12 rows into `reporting.monthly_clinic_supply_performance` and closes the `reporting.pipeline_runs` row opened at the start of the run.
 
@@ -156,7 +156,7 @@ Load upserts those 12 rows into `reporting.monthly_clinic_supply_performance` an
 
 Two cases still have to update a published number:
 
-1. The same action is posted twice. The browser retries `POST /telemetry/events` after a timeout (`MAX_ATTEMPTS` is 3 in `telemetry.ts`). Both rows can share `eventId` and differ in receive time. Extract keeps one row per `event_id` (the earliest `timestamp`) before any sum or count. The capture service, when it persists events, should also upsert on `event_id` and return 200 when that id is already stored. This pipeline does not depend on that write succeeding perfectly, because it dedups again at extract.
+1. The same action can be stored more than once under one `eventId`. Extract keeps one row per `event_id` (the earliest `timestamp`) before any sum or count, so a replay does not add the cost or the count twice.
 2. The monthly rollup already exists and a late event arrives, or the load is run again. The destination is one row per clinic per month, not one row per event. Load uses:
 
 ```sql
@@ -206,16 +206,16 @@ The execution log is a second new table, `reporting.pipeline_runs`, described be
 
 ## Idempotency
 
-Failure mode this design is written for: the 06:00 UTC run on the first of the month inserts some of the 12 clinic rows, then Supabase times out. A later run, scheduled or manual, must leave the same 12 rows a clean run would have left.
+If the load phase fails after some of the 12 clinic rows are inserted, a later run, scheduled or manual, must leave the same 12 rows a clean run would have left.
 
 What the second run does:
 
-1. It refuses to start if another run for the same `month_start` is already `Running` (see concurrent runs below). A dead run is `Failed` before the new one starts, or the operator marks it `Failed` when the worker is gone. The new attempt gets a new `run_id`.
+1. It refuses to start if another run for the same `month_start` is already `Running`. A dead run is `Failed` before the new one starts, or the operator marks it `Failed` when the worker is gone. The new attempt gets a new `run_id`.
 2. Extract reads the whole month again from `telemetry_events` and dedups on `event_id`. It does not read the half-loaded reporting table as its source.
 3. Transform rebuilds all 12 clinic rows for that `month_start` in memory. Clinics that never appeared in the partial load are in this set because the directory, not the partial table, defines the grain.
 4. Load upserts on `(clinic_id, month_start)`. Rows the failed run already inserted are overwritten with the recomputed measures. Rows it never inserted are inserted. Nothing is incremented. A second successful run over unchanged source data writes the same measures and only moves `computed_at`.
 
-There is no "resume the INSERT at row 8" path. The checkpoint says where the last attempt died. Recovery is a full recompute of that month plus the upsert. That is safe because the grain key is unique and the measures are deterministic functions of the deduped source. `reporting.pipeline_run_events` is not a recovery source. A failed attempt may hold a partial lineage under its own `run_id`. The next attempt writes a new `run_id` and reads `telemetry_events` again.
+The second run does not resume a partial insert. `phase` records the stage that failed. Recovery is a full recompute of that month plus the upsert. That is safe because the grain key is unique and the measures are deterministic functions of the deduped source. `reporting.pipeline_run_events` is not a recovery source. A failed attempt may hold a partial lineage under its own `run_id`. The next attempt writes a new `run_id` and reads `telemetry_events` again.
 
 ## Execution log
 
@@ -240,8 +240,6 @@ Table: `reporting.pipeline_runs`. One row per attempt. Rows are inserted at star
 | `distinct_request_count` | `integer` | Distinct `request_id` values on the deduped rows. A burst that shares few request ids is one batch. A burst across many request ids is activity across requests. |
 | `silent_clinic_ids` | `text` | Comma-separated clinic ids whose `supply_consumption_count` is 0 this month and was greater than 0 in the previous completed month, while `clinics_reporting_count` is greater than 0. Empty when no clinic went silent. This is the silence alert. |
 | `error_message` | `text`, null on success | The warehouse or validation error. Enough to see a Supabase timeout without opening the worker log. |
-
-The minimum audit set the brief asks for is `started_at`, `finished_at`, `records_extracted` (records processed), `status`, and `error_message`. The extra count columns are how a reader tells growth, a quiet clinic, and a missed capture apart without opening the warehouse.
 
 Lineage table, written by extract after dedup, one row per source event that entered the transform. It is not a business KPI table. It does not store `userId`.
 
@@ -321,36 +319,6 @@ New module, separate from `services/telemetry/`: `services/reporting/`. The HTTP
 `clinic_id` in that payload is the text form of the monorepo clinic id. Clinics are returned side by side. The handler does not add USD figures to GBP figures.
 
 Part 3's dashboard reads the KPI query. This design does not build that dashboard.
-
-## Design cases
-
-### Idempotency
-
-1. Duplicates at the source. An operator confirms a receipt and the client posts `inbound_order_created` twice within 300 ms. Both envelopes carry the same `eventId`. The dedup key is `event_id`, applied at extract, before the sum. The capture sink should also upsert on `eventId` and treat the second write as already stored. `order_id` is not the dedup key: two different receipts can share no event id and must both count, and one receipt retried must not count twice even if `order_id` were absent on a malformed row.
-
-2. Re-run after a partial load. The run loaded 8 of 12 clinic rows and failed on a Supabase timeout. `pipeline_runs.phase` is `load`, `status` is `Failed`, `records_loaded` is 8. The next run recomputes all 12 rows from `telemetry_events` and upserts on `(clinic_id, month_start)`. The 8 existing rows are replaced. The 4 missing rows are inserted. The measures match a clean run.
-
-3. Late events. A `supply_expiry_flagged` event is stored at 23:50 UTC with a `timestamp` of noon on a day whose month is already on the board pack. The published row is wrong until that month is recomputed. `POST /reporting/pipeline-runs` with that `month_start` runs the same flow again. Upsert replaces the 12 rows. The new `pipeline_runs` row records the invalidating run. The old run row stays. `computed_at` on the business row moves forward. Counts are not incremented on top of the previous pack.
-
-### Observability
-
-4. Silence versus a missed capture. Between 14:00 and 15:00 a clinic can record none of the four supply events while it is still open. The client does not post an empty batch: `flush` in `uis/backoffice/src/services/telemetry.ts` returns when the queue is empty, so that hour has no supply row and no capture ping. The monthly flow still leaves a heartbeat. It inserts `reporting.pipeline_runs` at the start of every scheduled and manual attempt, and it closes that row as `Completed` even when `records_extracted` is 0 and every clinic measure is 0. A month with no `Completed` row is a pipeline that never ran. A `Completed` row with `records_extracted = 0` and `records_loaded = 12` is a month the pipeline judged empty. A `Failed` row, or a `Running` row whose `finished_at` is still null past the flow timeout, is a run that did not finish. The silence alert is `silent_clinic_ids`: clinic ids whose `supply_consumption_count` is 0 this month and was greater than 0 on the previous completed month, while `clinics_reporting_count` is greater than 0. A zero business row whose clinic id is absent from that list is a clinic the previous month was also quiet.
-
-5. Trace from event to pack. Extract writes one `reporting.pipeline_run_events` row per deduped source event: `run_id`, `event_id`, `request_id`, `session_id`, `event_type`, `clinic_id`, `event_timestamp`. That row is the join from envelope `requestId` to `run_id`. The business row's `computed_at` matches `pipeline_runs.finished_at` for the `run_id` that loaded that `month_start`. A spike at 09:00 and a flat line at 09:15 is read from that lineage, grouped by `event_timestamp` and `request_id`. Many events that share one `request_id` inside a few seconds are one `POST /telemetry/events` batch. Events spread across many `request_id` values are separate requests. `distinct_request_count` is the summary on the run. `records_extracted` is also compared with the count of distinct `event_id` in `telemetry_events` for `[month_start, next month)`. If the warehouse count is about double the extracted count, the parameter covered two windows. The flow only reads that half-open month, and `month_start` on the run row is the value that was used.
-
-6. Growth versus lost or duplicated events. A Monday with 12,000 events and a Sunday with 800 can be a real clinic pattern. The check is three counts on the same run. `records_extracted` is compared with `distinct_session_count` (distinct envelope `sessionId` on the deduped supply events) and with `clinics_reporting_count` (clinics 1–12 that contributed at least one of the four events). Many sessions and all twelve clinics on a weekday, and fewer of both on Sunday, is a pattern. A drop in `records_extracted` while `distinct_session_count` and `clinics_reporting_count` hold is lost or filtered events. A rise in `records_extracted` while distinct `event_id` rises with it is real activity. A rise in stored rows while distinct `event_id` does not rise is a duplicate that dedup on `event_id` is there to remove. `cost_missing_count` or `records_rejected` rising for one clinic while the other clinics hold their `supply_consumption_count` is a capture gap at that clinic. When that clinic's consumption count falls to 0 after a month above 0, its id is written to `silent_clinic_ids`.
-
-### Recoverability
-
-7. Database outage mid-pipeline. Pandas (or the equivalent frame inside `transform_clinic_month_kpis`) can finish grouping while the `INSERT` into `reporting.monthly_clinic_supply_performance` drops. `pipeline_runs.phase` is `load`. The next run does not continue that INSERT. It starts at extract for the same `month_start` and upserts. The checkpoint is the `phase` column, not a row offset inside the batch.
-
-8. Browser buffer. The backoffice already queues events and flushes on a timer, on batch size, and with `sendBeacon` when the tab hides. An operator offline for 20 minutes can flush 45 events in one batch. That buffer is the right place for a short outage. The risk is a double send, a burst that lands in the next month's timestamp window only if the envelope `timestamp` is rewritten at flush time, and a queue that still holds a payload if the tab is killed. This pipeline does not own that buffer. Capture must stamp `timestamp` when the fact happens, not when the batch is flushed, and the server must dedup on `eventId`. The monthly flow then sees one row per action in the month the action happened.
-
-9. Retry on `POST /telemetry/events`. The client retries up to `MAX_ATTEMPTS` (3) after a timeout or a network error. The idempotency key is the envelope `eventId`. That value is what an `Idempotency-Key` header would carry, and the server stores it as `event_id`. If a retry arrives and that `event_id` is already stored, the response is 200 and the event is already stored. The server does not insert a second row. A timeout or a 5xx means retry. A 4xx means the payload was rejected, and the client does not retry it. This pipeline still dedups on `event_id`, so a retry that did store a second row does not double a KPI.
-
-### Concurrent runs
-
-10. The scheduled flow starts at 06:00 UTC on the first of the month. At 06:05 someone calls `POST /reporting/pipeline-runs` for the same `month_start`. The same overlap is a 02:00 schedule and a 02:05 manual click. `trigger_monthly_clinic_supply_performance` looks for a `pipeline_runs` row with that `month_start` and `status = Running`. If one exists, it does not call the flow, and the handler returns 409 with the existing `run_id`. The Prefect deployment uses a concurrency limit keyed by `month_start` so a second run cannot pass the lock by skipping the HTTP handler. When the first run finishes, a manual run is allowed and becomes its own `run_id`. The upsert makes the overlap safe even if the lock fails: two completed runs leave one row per clinic, the later `computed_at`, and two audit rows, each with its own lineage.
 
 ## What this part does not change
 
