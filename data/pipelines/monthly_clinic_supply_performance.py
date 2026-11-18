@@ -6,15 +6,12 @@ Does not write telemetry_events and does not call the technical report.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from prefect import flow, task
-from prefect.states import State
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine import Connection, Engine
@@ -210,11 +207,10 @@ def _fetch_supply_events(connection: Connection, month_start: date) -> list[dict
 # Three attempts, ten seconds apart. Extract and load talk to Postgres.
 # A Supabase pooler timeout usually clears on the next try. A fourth try would
 # mean the outage is no longer transient.
-_DB_RETRIES = 3
-_DB_RETRY_DELAY_SECONDS = 10
+DB_RETRIES = 3
+DB_RETRY_DELAY_SECONDS = 10
 
 
-@task(name="extract_supply_events", retries=_DB_RETRIES, retry_delay_seconds=_DB_RETRY_DELAY_SECONDS)
 def extract_supply_events(month_start_iso: str, run_id: str) -> dict:
     month_start = parse_month_start(month_start_iso)
     with get_engine().begin() as connection:
@@ -274,24 +270,6 @@ def extract_supply_events(month_start_iso: str, run_id: str) -> dict:
     }
 
 
-def clinic_month_cache_key(_context: object, parameters: dict) -> str:
-    """Key is the month plus a digest of the deduped events.
-
-    The same extract is reused for one hour. A new or corrected event changes
-    the digest, so the cached transform is not reused for different inputs.
-    """
-
-    extracted = parameters.get("extracted") or {}
-    body = json.dumps(extracted, sort_keys=True, default=str)
-    digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
-    return f"clinic-month-{extracted.get('month_start')}-{digest}"
-
-
-@task(
-    name="transform_clinic_month_kpis",
-    cache_key_fn=clinic_month_cache_key,
-    cache_expiration=timedelta(hours=1),
-)
 def transform_clinic_month_kpis(extracted: dict) -> dict:
     month_start = parse_month_start(extracted["month_start"])
     events = []
@@ -322,11 +300,6 @@ def _previous_consumption(connection: Connection, month_start: date) -> dict[str
     return {str(row[0]): int(row[1]) for row in rows}
 
 
-@task(
-    name="load_monthly_clinic_supply_performance",
-    retries=_DB_RETRIES,
-    retry_delay_seconds=_DB_RETRY_DELAY_SECONDS,
-)
 def load_monthly_clinic_supply_performance(result: dict, run_id: str) -> dict:
     # Same retry budget as extract. Load is the other task that opens Postgres.
     with get_engine().begin() as connection:
@@ -374,7 +347,6 @@ def load_monthly_clinic_supply_performance(result: dict, run_id: str) -> dict:
     return result
 
 
-@task(name="publish_eval_snapshot")
 def publish_eval_snapshot(result: dict) -> str:
     _EVAL.mkdir(parents=True, exist_ok=True)
     path = _EVAL / f"monthly_clinic_supply_performance_{result['month_start']}.json"
@@ -459,34 +431,6 @@ def _fail_run(run_id: str, phase: str, error: str) -> None:
         _close_run(connection, run_id, "Failed", phase, None, error[:2000])
 
 
-@flow(name="monthly_clinic_supply_performance")
-def monthly_clinic_supply_performance(month_start: str | None = None, trigger: str = "schedule") -> str:
-    target = parse_month_start(month_start)
-    run_id = _open_run(target, trigger)
-    phase = "extract"
-    try:
-        extracted = extract_supply_events(target.isoformat(), run_id)
-        phase = "transform"
-        with get_engine().begin() as connection:
-            connection.execute(
-                text("UPDATE reporting.pipeline_runs SET phase = 'transform' WHERE run_id = :run_id"),
-                {"run_id": run_id},
-            )
-        result = transform_clinic_month_kpis(extracted)
-        # The eval snapshot is not part of extract, transform, or load.
-        # return_state=True keeps a failure here from stopping the load.
-        snapshot: State = publish_eval_snapshot(result, return_state=True)
-        if snapshot.is_failed():
-            # Load still runs. This snapshot is not part of the business table.
-            phase = "load"
-        phase = "load"
-        load_monthly_clinic_supply_performance(result, run_id)
-    except Exception as exc:
-        _fail_run(run_id, phase, str(exc))
-        raise
-    return run_id
-
-
 def latest_run_status() -> dict | None:
     with get_engine().begin() as connection:
         ensure_reporting_tables(connection)
@@ -552,6 +496,8 @@ def query_monthly_clinic_supply_performance(month_start: str | None = None) -> d
 
 
 def trigger_monthly_clinic_supply_performance(month_start: str | None = None) -> dict:
+    from data.pipelines.pipeline import monthly_clinic_supply_performance
+
     run_id = monthly_clinic_supply_performance(month_start=month_start, trigger="manual")
     with get_engine().connect() as connection:
         row = connection.execute(
