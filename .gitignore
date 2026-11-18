@@ -8,4 +8,6 @@ htmlcov/
 coverage/
 .env
 **/.env
+data/raw/*.json
+data/eval/*.json
 

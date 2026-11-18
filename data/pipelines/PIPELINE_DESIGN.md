@@ -261,8 +261,18 @@ A recompute inserts a new `run_id`. The previous lineage rows stay, so the inval
 ## Prefect mapping
 
 Main flow: `monthly_clinic_supply_performance`.
-Planned module: `data/pipelines/monthly_clinic_supply_performance.py`.
+Module: `data/pipelines/monthly_clinic_supply_performance.py`.
+Entry point: `data/pipelines/pipeline.py`.
 Schedule: 06:00 UTC on day 1 of each month. The flow parameter `month_start` defaults to the previous UTC month. A manual run passes an explicit `month_start`.
+
+Run from the monorepo root with `DATABASE_URL` set:
+
+```bash
+python data/pipelines/pipeline.py
+python data/pipelines/pipeline.py 2026-11-01
+```
+
+The first command computes the previous UTC month. The second computes the month that starts on that date.
 
 Tasks, in order:
 

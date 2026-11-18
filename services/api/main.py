@@ -56,6 +56,20 @@ inventory_router = _load_inventory_router()
 telemetry_router = _load_telemetry_router()
 
 
+def _load_reporting_router():
+    path = _SERVICES_DIR / "reporting" / "router.py"
+    spec = importlib.util.spec_from_file_location("healthcore_reporting_router", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load services/reporting/router.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.reporting_router
+
+
+reporting_router = _load_reporting_router()
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     if os.environ.get("DATABASE_URL", "").strip():
@@ -71,6 +85,7 @@ app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(inventory_router)
 app.include_router(telemetry_router)
+app.include_router(reporting_router)
 
 app.add_middleware(
     CORSMiddleware,
