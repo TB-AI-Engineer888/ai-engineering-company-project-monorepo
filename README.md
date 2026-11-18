@@ -7,6 +7,8 @@ Company: HealthCore. This part is the design only.
 | Design document | [data/pipelines/PIPELINE_DESIGN.md](./data/pipelines/PIPELINE_DESIGN.md) |
 | Pipeline entry | `data/pipelines/pipeline.py` |
 | Reporting routes | `services/reporting/router.py` |
+| KPI tests | `tests/pipelines/test_pipeline.py` |
+| Leadership report | `uis/backoffice` page `/reporting` |
 
 The pipeline reads `telemetry_events` and writes `reporting.monthly_clinic_supply_performance`. It does not change `services/telemetry/analysis.py` or `GET /telemetry/report`.
 

@@ -12,6 +12,7 @@ const NAV = [
   { href: "/backoffice/inventory/products", label: "Medical supplies", icon: Package },
   { href: "/backoffice/inventory/orders", label: "Supply orders", icon: ClipboardList },
   { href: "/incidents", label: "Incident analyzer", icon: FileBarChart },
+  { href: "/reporting", label: "Supply performance", icon: FileBarChart },
   { href: "/telemetry", label: "Telemetry", icon: Activity },
   { href: "/account/profile", label: "Account profile", icon: CircleUser },
 ];
@@ -24,6 +25,7 @@ function sectionTitle(pathname: string) {
   if (pathname.startsWith("/backoffice/inventory/orders")) return "Supply orders";
   if (pathname.startsWith("/backoffice/inventory")) return "Medical supplies";
   if (pathname.startsWith("/incidents")) return "Incident analyzer";
+  if (pathname.startsWith("/reporting")) return "Supply performance";
   if (pathname.startsWith("/telemetry")) return "Telemetry";
   if (pathname.startsWith("/account")) return "Account";
   return "Operations overview";

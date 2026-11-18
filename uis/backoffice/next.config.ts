@@ -32,6 +32,10 @@ const nextConfig: NextConfig = {
         source: "/telemetry/:path*",
         destination: `${apiOrigin}/telemetry/:path*`,
       },
+      {
+        source: "/reporting/:path*",
+        destination: `${apiOrigin}/reporting/:path*`,
+      },
     ];
   },
 };

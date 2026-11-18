@@ -87,6 +87,92 @@ def _text(value: object) -> str:
     return str(value).strip()
 
 
+def _accepted(event: dict) -> dict | None:
+    """Return a clinic event, or None when the row cannot be used for a KPI."""
+
+    if not isinstance(event, dict):
+        return None
+    event_id = _text(event.get("event_id"))
+    clinic_id = event.get("clinic_id")
+    if isinstance(clinic_id, bool) or clinic_id is None:
+        return None
+    clinic_key = _text(clinic_id)
+    country = _text(event.get("country")).upper()
+    clinic = _BY_ID.get(clinic_key)
+    if not event_id or clinic is None or country != clinic["country"]:
+        return None
+    kind = event.get("event_type")
+    if kind not in SUPPLY_EVENT_TYPES:
+        return None
+    return {
+        "event_id": event_id,
+        "clinic_id": clinic_key,
+        "country": country,
+        "currency": clinic["currency"],
+        "event_type": kind,
+        "total_cost": event.get("total_cost"),
+    }
+
+
+def supply_cost_per_clinic(events: list[dict]) -> dict[str, float]:
+    """Supply Cost per Clinic: sum of inbound receipt costs. Missing or bad costs add nothing."""
+
+    totals = {clinic["clinic_id"]: 0.0 for clinic in CLINICS}
+    if not isinstance(events, list):
+        return totals
+    for event in events:
+        accepted = _accepted(event)
+        if accepted is None or accepted["event_type"] != "inbound_order_created":
+            continue
+        cost = _number(accepted["total_cost"])
+        if cost is None:
+            continue
+        totals[accepted["clinic_id"]] += cost
+    return {clinic_id: round(amount, 2) for clinic_id, amount in totals.items()}
+
+
+def supply_consumption_volume(events: list[dict]) -> dict[str, int]:
+    """Supply Consumption Volume: count of outbound consumption events per clinic."""
+
+    counts = {clinic["clinic_id"]: 0 for clinic in CLINICS}
+    if not isinstance(events, list):
+        return counts
+    for event in events:
+        accepted = _accepted(event)
+        if accepted is None or accepted["event_type"] != "outbound_order_created":
+            continue
+        counts[accepted["clinic_id"]] += 1
+    return counts
+
+
+def critical_stockout_frequency(events: list[dict]) -> dict[str, int]:
+    """Critical Stockout Frequency: count of minimum-threshold events per clinic."""
+
+    counts = {clinic["clinic_id"]: 0 for clinic in CLINICS}
+    if not isinstance(events, list):
+        return counts
+    for event in events:
+        accepted = _accepted(event)
+        if accepted is None or accepted["event_type"] != "stock_threshold_triggered":
+            continue
+        counts[accepted["clinic_id"]] += 1
+    return counts
+
+
+def expiry_risk_count(events: list[dict]) -> dict[str, int]:
+    """Expiry Risk Count: count of expiry flags per clinic."""
+
+    counts = {clinic["clinic_id"]: 0 for clinic in CLINICS}
+    if not isinstance(events, list):
+        return counts
+    for event in events:
+        accepted = _accepted(event)
+        if accepted is None or accepted["event_type"] != "supply_expiry_flagged":
+            continue
+        counts[accepted["clinic_id"]] += 1
+    return counts
+
+
 def dedup_events(rows: list[dict]) -> tuple[list[dict], int]:
     """Keep the earliest timestamp for each event_id. Rows with no id are rejected."""
 
@@ -142,21 +228,22 @@ def build_clinic_month(events: list[dict], month_start: date, previous_consumpti
             sessions.add(session_id)
         clinics_seen.add(clinic_id)
         kind = event.get("event_type")
-        row = measures[clinic_id]
-        if kind == "inbound_order_created":
-            cost = _number(event.get("total_cost"))
-            if cost is None:
-                cost_missing += 1
-            else:
-                row["total_supply_cost"] += cost
-        elif kind == "outbound_order_created":
-            row["supply_consumption_count"] += 1
-        elif kind == "stock_threshold_triggered":
-            row["critical_stockout_count"] += 1
-        elif kind == "supply_expiry_flagged":
-            row["expiry_risk_count"] += 1
-        else:
+        if kind == "inbound_order_created" and _number(event.get("total_cost")) is None:
+            cost_missing += 1
+        elif kind not in SUPPLY_EVENT_TYPES:
             rejected += 1
+
+    costs = supply_cost_per_clinic(events)
+    consumption = supply_consumption_volume(events)
+    stockouts = critical_stockout_frequency(events)
+    expiry = expiry_risk_count(events)
+    for clinic in directory:
+        clinic_id = clinic["clinic_id"]
+        row = measures[clinic_id]
+        row["total_supply_cost"] = costs[clinic_id]
+        row["supply_consumption_count"] = consumption[clinic_id]
+        row["critical_stockout_count"] = stockouts[clinic_id]
+        row["expiry_risk_count"] = expiry[clinic_id]
 
     clinics_reporting = len(clinics_seen)
     silent: list[str] = []
@@ -168,9 +255,7 @@ def build_clinic_month(events: list[dict], month_start: date, previous_consumpti
 
     rows = []
     for clinic in directory:
-        item = measures[clinic["clinic_id"]]
-        item["total_supply_cost"] = round(item["total_supply_cost"], 2)
-        rows.append(item)
+        rows.append(measures[clinic["clinic_id"]])
 
     return {
         "month_start": month_start.isoformat(),
