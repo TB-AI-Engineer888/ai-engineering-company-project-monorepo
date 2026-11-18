@@ -7,6 +7,7 @@ import { FileDropzone } from "@/components/file-dropzone";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { analyzeIncidents, downloadResultsCsv } from "@/lib/api";
 import type { AnalysisResult } from "@/lib/types";
+import { track } from "@/services/telemetry";
 
 export function IncidentAnalyzer() {
   const [fileName, setFileName] = useState<string | null>(null);
@@ -22,8 +23,14 @@ export function IncidentAnalyzer() {
     setExportError(null);
     setResult(null);
     setLoading(true);
+    const started = performance.now();
     try {
       const next = await analyzeIncidents(file);
+      track("incident_analysis_completed", {
+        source_kind: "upload",
+        row_count: next.total_rows,
+        duration_ms: Math.max(0, Math.round(performance.now() - started)),
+      });
       setResult(next);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Analysis failed.");

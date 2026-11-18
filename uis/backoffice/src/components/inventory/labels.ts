@@ -6,6 +6,20 @@ export const SUPPLY_CATEGORY_LABELS: Record<string, string> = {
   consumables: "Consumables",
 };
 
+export const DEPARTMENT_LABELS: Record<string, string> = {
+  primary_care: "Primary care",
+  specialty_care: "Specialty care",
+  chronic_care: "Chronic care",
+  general_consultation: "General consultation",
+};
+
+export const SUPPLY_UNIT_LABELS: Record<string, string> = {
+  box: "Box",
+  unit: "Unit",
+  pack: "Pack",
+  vial: "Vial",
+};
+
 export const CONSUMPTION_TYPE_LABELS: Record<string, string> = {
   clinical_use: "Clinical use",
   expiry_waste: "Expiry waste",

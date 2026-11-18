@@ -1,3 +1,4 @@
+import { ProductRegisterForm } from "@/components/inventory/product-register-form";
 import { ProductsTable, StockLegend } from "@/components/inventory/products-table";
 
 export default function MedicalSuppliesPage() {
@@ -10,6 +11,7 @@ export default function MedicalSuppliesPage() {
         </p>
         <StockLegend />
       </div>
+      <ProductRegisterForm />
       <ProductsTable />
     </div>
   );

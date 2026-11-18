@@ -58,12 +58,20 @@ def get_user_by_email(email: str) -> dict[str, Any] | None:
     return ensure_user_uuid(users_table().get(Query().email == email))
 
 
+class LoginRejected(ValueError):
+    def __init__(self, reason: str) -> None:
+        super().__init__("Incorrect email or password")
+        self.reason = reason
+
+
 def authenticate(email: str, password: str) -> str:
     user = get_user_by_email(email)
-    if user is None or not user.get("is_active", False) or not password:
-        raise ValueError("Incorrect email or password")
-    if not verify_password(password, user["hashed_password"]):
-        raise ValueError("Incorrect email or password")
+    if user is None:
+        raise LoginRejected("unknown_user")
+    if not user.get("is_active", False):
+        raise LoginRejected("inactive_user")
+    if not password or not verify_password(password, user["hashed_password"]):
+        raise LoginRejected("bad_password")
     return create_access_token(user["id"])
 
 

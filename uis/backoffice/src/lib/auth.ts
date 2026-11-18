@@ -1,5 +1,5 @@
 import { ApiError, apiRequest } from "@/lib/http";
-import { clearToken, setToken } from "@/lib/session";
+import { clearSession, clearStaffId, clearToken, setStaffId, setToken, startSession } from "@/lib/session";
 
 export type Profile = {
   name: string;
@@ -12,6 +12,14 @@ export type Account = {
   profile: Profile;
 };
 
+export type SignedIn = {
+  role: "admin" | "manager" | "user";
+};
+
+export type RegisteredAccount = Account & {
+  uuid: string | null;
+};
+
 export type RegisterInput = {
   email: string;
   password: string;
@@ -20,15 +28,24 @@ export type RegisterInput = {
   address: string;
 };
 
-export async function registerAccount(input: RegisterInput): Promise<Account> {
-  return apiRequest<Account>("/users", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+export async function registerAccount(input: RegisterInput): Promise<RegisteredAccount> {
+  const account = await apiRequest<{ email?: string; uuid?: string | null; profile?: Partial<Profile> | null }>(
+    "/users",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+  if (typeof account.uuid === "string") setStaffId(account.uuid);
+  return {
+    email: account.email ?? "",
+    uuid: typeof account.uuid === "string" ? account.uuid : null,
+    profile: profileFrom(account.profile),
+  };
 }
 
-export async function login(email: string, password: string): Promise<void> {
-  const result = await apiRequest<{ access_token?: string }>("/auth/login", {
+export async function login(email: string, password: string): Promise<SignedIn> {
+  const result = await apiRequest<{ access_token?: string; uuid?: string | null; role?: string }>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
@@ -36,6 +53,12 @@ export async function login(email: string, password: string): Promise<void> {
     throw new ApiError("The server did not return a session token.", 500);
   }
   setToken(result.access_token);
+  if (typeof result.uuid === "string") setStaffId(result.uuid);
+  startSession();
+  if (result.role === "admin" || result.role === "manager" || result.role === "user") {
+    return { role: result.role };
+  }
+  return { role: "user" };
 }
 
 function profileFrom(value: Partial<Profile> | null | undefined): Profile {
@@ -47,11 +70,12 @@ function profileFrom(value: Partial<Profile> | null | undefined): Profile {
 }
 
 export async function fetchMe(): Promise<Account> {
-  const account = await apiRequest<{ email?: string; profile?: Partial<Profile> | null }>(
+  const account = await apiRequest<{ email?: string; uuid?: string | null; profile?: Partial<Profile> | null }>(
     "/auth/me",
     { method: "GET" },
     { session: true, redirectOn401: false },
   );
+  if (typeof account.uuid === "string") setStaffId(account.uuid);
   return {
     email: account.email ?? "",
     profile: profileFrom(account.profile),
@@ -69,5 +93,7 @@ export async function updateProfile(profile: Profile): Promise<Profile> {
 
 export function logout(): void {
   clearToken();
+  clearStaffId();
+  clearSession();
   window.location.assign("/login");
 }

@@ -23,6 +23,10 @@ def access_token_expire_minutes() -> int:
     return int(raw)
 
 
+def telemetry_endpoint() -> str:
+    return os.environ.get("TELEMETRY_ENDPOINT", "").strip()
+
+
 def tinydb_path() -> Path:
     configured = os.environ.get("TINYDB_PATH", "").strip()
     if configured:

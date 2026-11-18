@@ -3,12 +3,23 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from db import users_table
 from deps import get_current_user
 from profiles import create_profile, get_profile_by_user_id, public_profile, update_profile
-from users import Role, authenticate, create_user, delete_user, get_user_by_id, public_user, update_user
+from users import (
+    Role,
+    LoginRejected,
+    authenticate,
+    create_user,
+    delete_user,
+    get_user_by_email,
+    get_user_by_id,
+    public_user,
+    update_user,
+)
 
 users_router = APIRouter(prefix="/users", tags=["users"])
 profiles_router = APIRouter(prefix="/profiles", tags=["profiles"])
@@ -133,9 +144,20 @@ async def login(request: Request) -> dict[str, str]:
         password = str(form.get("password") or "")
     try:
         token = authenticate(email, password)
+    except LoginRejected as exc:
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Incorrect email or password", "failure_reason": exc.reason},
+        )
     except ValueError as exc:
         raise HTTPException(status_code=401, detail="Incorrect email or password") from exc
-    return {"access_token": token, "token_type": "bearer"}
+    user = get_user_by_email(email)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "uuid": user.get("uuid") if user else None,
+        "role": user.get("role") if user else None,
+    }
 
 
 @auth_router.get("/me")
@@ -144,5 +166,6 @@ def read_me(caller: dict = Depends(get_current_user)) -> dict[str, Any]:
     return {
         "email": caller["email"],
         "role": caller["role"],
+        "uuid": caller.get("uuid"),
         "profile": public_profile(profile) if profile else None,
     }
