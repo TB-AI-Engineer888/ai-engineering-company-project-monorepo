@@ -4,10 +4,9 @@ RUN apk add --no-cache libc6-compat
 
 WORKDIR /uis
 
-# Existing monorepo UIs, installed separately:
-# - backoffice is the Next.js admin app and has its own package manifest
-# - healthcore-website is the public site and has no package manifest
+COPY website/package.json website/package-lock.json ./website/
 COPY backoffice/package.json backoffice/package-lock.json ./backoffice/
+RUN npm ci --prefix website
 RUN npm ci --prefix backoffice
 
 COPY . .
