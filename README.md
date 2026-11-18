@@ -1,3 +1,15 @@
+# Milestone — Designing a Business Performance Data Pipeline (Part 1 of 3)
+
+Company: HealthCore. This part is the design only.
+
+| What | Where |
+| --- | --- |
+| Design document | [data/pipelines/PIPELINE_DESIGN.md](./data/pipelines/PIPELINE_DESIGN.md) |
+
+The pipeline reads `telemetry_events` and writes `reporting.monthly_clinic_supply_performance`. It does not change `services/telemetry/analysis.py` or `GET /telemetry/report`.
+
+---
+
 # Frontend Performance Audit
 
 Search for **Frontend Performance Audit**. The deliverables are on `main`:
