@@ -337,4 +337,6 @@ Part 3's dashboard reads the KPI query. This design does not build that dashboar
 - The contents of `telemetry_events` (read only)
 - Inventory routes, `MedicalSupply`, `SupplyDelivery`, and `SupplyConsumption`
 
-Part 2 is the flow, the tasks, and the reporting schema. Part 3 is subflows, tests, and the dashboard on `GET /reporting/monthly-clinic-supply-performance`.
+Part 2 is the flow, the tasks, and the reporting schema. Part 3 splits that flow into subflows, adds the KPI tests, and shows the report at `/reporting`.
+
+The Part 1 design questions that this pipeline already answers are the silence alert and the overlapping-run lock. `silent_clinic_ids` on `reporting.pipeline_runs` separates a clinic that went quiet from a pipeline that never ran. A second run for the same month is refused while one row is `Running`. Part 3 did not add a second copy of either control.
