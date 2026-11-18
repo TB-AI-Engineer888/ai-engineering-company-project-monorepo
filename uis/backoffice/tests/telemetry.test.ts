@@ -27,6 +27,26 @@ test("a property outside the allowlist is dropped", () => {
   expect(event?.properties).toEqual({ role: "user" });
 });
 
+test("inbound_order_created requires total_cost and keeps it", () => {
+  const properties = {
+    clinic_id: 1,
+    country: "US",
+    product_id: 1,
+    product_category: "ppe",
+    quantity: 40,
+    order_id: 15,
+    vendor_name: "MedLine Industries",
+    sku: "HCR-PPE-001",
+    unit: "box",
+    country_mismatch: false,
+    total_cost: 184.5,
+  };
+  const event = buildTelemetryEvent("inbound_order_created", properties, context);
+  expect(event?.properties.total_cost).toBe(184.5);
+  expect(buildTelemetryEvent("inbound_order_created", { ...properties, total_cost: undefined }, context)).toBeNull();
+  expect(buildTelemetryEvent("inbound_order_created", { ...properties, total_cost: -1 }, context)).toBeNull();
+});
+
 test("account_registered keeps the staff id and clears the session", () => {
   const event = buildTelemetryEvent("account_registered", { role: "user" }, context);
   expect(event?.userId).toBe(context.userId);

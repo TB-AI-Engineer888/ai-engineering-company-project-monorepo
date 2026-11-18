@@ -152,6 +152,7 @@ We capture `inbound_order_created` because we need to know how much and what sup
 | `sku` | string | yes | no | medical_supplies.sku, copied so the batch can be read without a join. |
 | `unit` | string | yes | no | Unit stored on the supply: box, unit, pack, or vial. |
 | `country_mismatch` | boolean | yes | no | True when medical_supplies.country differs from the clinic country. The event still uses the clinic country. |
+| `total_cost` | number | yes | no | Cost of this receipt in the clinic currency. USD for clinics 1 through 9, GBP for clinics 10 through 12. Not a patient charge. |
 
 ### `outbound_order_created`
 
@@ -599,7 +600,8 @@ We capture `backoffice_flow_abandoned` because we need to know which step of a r
     "vendor_name": "MedLine Industries",
     "sku": "HCR-PPE-001",
     "unit": "box",
-    "country_mismatch": false
+    "country_mismatch": false,
+    "total_cost": 184.5
   }
 }
 ```

@@ -98,6 +98,13 @@
           "required": true,
           "sensitive": false,
           "description": "True when medical_supplies.country differs from the clinic country. The event still uses the clinic country."
+        },
+        {
+          "name": "total_cost",
+          "type": "number",
+          "required": true,
+          "sensitive": false,
+          "description": "Cost of this receipt in the clinic currency. USD for clinics 1-9, GBP for clinics 10-12. Not a patient charge."
         }
       ],
       "schema": {
@@ -178,7 +185,8 @@
               "vendor_name",
               "sku",
               "unit",
-              "country_mismatch"
+              "country_mismatch",
+              "total_cost"
             ],
             "properties": {
               "clinic_id": {
@@ -247,6 +255,11 @@
               "country_mismatch": {
                 "type": "boolean",
                 "description": "True when medical_supplies.country differs from the clinic country. The event still uses the clinic country."
+              },
+              "total_cost": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Cost of this receipt in the clinic currency. USD for clinics 1-9, GBP for clinics 10-12. Not a patient charge."
               }
             }
           }

@@ -24,6 +24,7 @@ export function InboundOrderForm() {
   const [clinicId, setClinicId] = useState("");
   const [lotId, setLotId] = useState("");
   const [expiresOn, setExpiresOn] = useState("");
+  const [totalCost, setTotalCost] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -58,6 +59,12 @@ export function InboundOrderForm() {
     setConfirmation(null);
     setPending(true);
     const supply = supplies.find((item) => item.id === Number(supplyId));
+    const cost = Number(totalCost);
+    if (!Number.isFinite(cost) || cost < 0) {
+      setFormError("Enter the receipt cost in the clinic currency.");
+      setPending(false);
+      return;
+    }
     try {
       const saved = await createSupplyDelivery({
         supply_id: Number(supplyId),
@@ -80,6 +87,7 @@ export function InboundOrderForm() {
           sku: supply.sku,
           unit: supply.unit,
           country_mismatch: supply.country !== country,
+          total_cost: cost,
         });
         const days = daysUntilExpiry(expiresOn);
         if (lotId.trim() && days !== null && days <= 30) {
@@ -102,6 +110,7 @@ export function InboundOrderForm() {
       setClinicId("");
       setLotId("");
       setExpiresOn("");
+      setTotalCost("");
       setConfirmation(`${saved.quantity} units are now on the supply record.`);
     } catch (caught) {
       if (caught instanceof ApiError) recordInventoryRejection("/inventory/orders/inbound", caught);
@@ -147,6 +156,21 @@ export function InboundOrderForm() {
         />
       </div>
       <ClinicSelect value={clinicId} onChange={setClinicId} />
+      <div className="space-y-2">
+        <Label htmlFor="total_cost">Total cost</Label>
+        <Input
+          id="total_cost"
+          name="total_cost"
+          type="number"
+          min="0"
+          step="0.01"
+          inputMode="decimal"
+          value={totalCost}
+          onChange={(event) => setTotalCost(event.target.value)}
+          required
+        />
+        <p className="text-sm text-muted-foreground">Clinic currency. USD for US clinics, GBP for UK clinics.</p>
+      </div>
       <div className="space-y-2">
         <Label htmlFor="lot_id">Lot</Label>
         <Input

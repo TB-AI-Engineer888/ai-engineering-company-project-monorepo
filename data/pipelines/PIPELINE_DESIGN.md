@@ -99,15 +99,13 @@ How often the source changes: the backoffice flushes a batch every 10 seconds or
 
 ### Additive field on `inbound_order_created`
 
-Supply Cost cannot be computed from the current allowlist. `inbound_order_created.properties` today is `clinic_id`, `country`, `product_id`, `product_category`, `quantity`, `order_id`, `vendor_name`, `sku`, `unit`, `country_mismatch`. `MedicalSupply` and `SupplyDelivery` have no price.
-
-Before the first production run, capture gains one property on that existing event type:
+`MedicalSupply` and `SupplyDelivery` have no price column. Supply Cost needs a cost on the event. The capture schema now requires `total_cost` on `inbound_order_created.properties`, next to the existing fields `clinic_id`, `country`, `product_id`, `product_category`, `quantity`, `order_id`, `vendor_name`, `sku`, `unit`, and `country_mismatch`.
 
 | Property | Type | Rule |
 | --- | --- | --- |
 | `total_cost` | number | Required on new receipts. Finite, `>= 0`. Cost of that receipt in the clinic currency. USD for clinics 1–9, GBP for clinics 10–12. Not a patient charge. |
 
-That is an extension of the capture schema (`docs/telemetry/event-schemas.json`, `uis/backoffice/src/services/telemetry-catalogue.ts`, and the inbound form that calls `track`). It is not a new event type, and it is not a change to `services/telemetry/analysis.py` or `GET /telemetry/report`. Those two do not read `total_cost`.
+The field is on `docs/telemetry/event-schemas.json`, `docs/telemetry/telemetry-plan.md`, `uis/backoffice/src/services/telemetry-catalogue.ts`, and the inbound delivery form. It is not a new event type. `services/telemetry/analysis.py` and `GET /telemetry/report` do not read it, and this part does not change them. The inventory tables are unchanged. The cost travels on the event, which is the source this pipeline reads.
 
 Events stored before the field exists have no cost. The transform does not invent one. They are excluded from `total_supply_cost` and counted in `cost_missing_count` on the execution log so a zero cost is distinguishable from a receipt whose cost was never captured.
 
@@ -335,4 +333,4 @@ Part 3's dashboard reads the KPI query. This design does not build that dashboar
 - The contents of `telemetry_events` (read only)
 - Inventory routes, `MedicalSupply`, `SupplyDelivery`, and `SupplyConsumption`
 
-Part 2 is the flow, the tasks, the reporting schema, and the `total_cost` capture field. Part 3 is subflows, tests, and the dashboard on `GET /reporting/monthly-clinic-supply-performance`.
+Part 2 is the flow, the tasks, and the reporting schema. Part 3 is subflows, tests, and the dashboard on `GET /reporting/monthly-clinic-supply-performance`.

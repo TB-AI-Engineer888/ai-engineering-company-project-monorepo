@@ -103,6 +103,7 @@ const catalogue: Record<string, EventSpec> = {
       "sku",
       "unit",
       "country_mismatch",
+      "total_cost",
     ],
     fields: {
       ...inventoryCore,
@@ -112,6 +113,7 @@ const catalogue: Record<string, EventSpec> = {
       sku: text(SKU, 40),
       unit: oneOf(UNITS),
       country_mismatch: (value) => typeof value === "boolean",
+      total_cost: (value) => typeof value === "number" && Number.isFinite(value) && value >= 0,
     },
   },
   outbound_order_created: {
