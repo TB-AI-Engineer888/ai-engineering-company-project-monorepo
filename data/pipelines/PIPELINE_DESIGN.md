@@ -2,41 +2,6 @@
 
 Part 1 of 3. Design only. No Prefect flow, no `services/reporting/` module, and no change to `services/telemetry/analysis.py` or `GET /telemetry/report` in this part.
 
-## Official task checklist
-
-These are the 25 checkboxes in the project brief: 13 under "What You Need to Do" and 12 under "What We Will Evaluate". Each one is done in this file.
-
-### What You Need to Do
-
-- [x] Document in a "Current State" section what you already have: the telemetry events captured so far, where they're stored, and what your existing technical report already answers for engineering. — [Current State](#current-state)
-- [x] Identify the gap: which business question from your `company-BRIEFING.md` is still unanswered by that technical report, and would require a dedicated pipeline? — [Business gap](#business-gap)
-- [x] Define the **purpose** of the pipeline in a single concrete sentence: name the specific business deliverable you're targeting (e.g., "produce the rollup that feeds [role]'s executive report at the BRIEFING cadence"), the KPI(s) it computes (from your `company-BRIEFING.md`'s "KPIs to Measure" section), and the mandatory metric(s) from your telemetry BRIEFING it's built on. — [Purpose](#purpose)
-- [x] Specify the **extraction format**: your source is `telemetry_events` (plus any other existing domain tables you need) — in what format the data arrives, and how often it's updated. — [Extraction format](#extraction-format)
-- [x] Design the **data flow** with a text or Mermaid diagram showing at least three clearly separated stages: extraction, transformation, and load. — [Data flow](#data-flow)
-- [x] Describe how you would handle a source that **updates existing records** rather than always inserting new ones — explain the concrete strategy to avoid duplicates in your specific case. — [Updates to existing records](#updates-to-existing-records)
-- [x] Name the **new destination table(s)** under the `reporting` schema using the **exact name from your company-BRIEFING.md Destination table section**, and the **new endpoint(s) in `services/reporting/`** that will expose it (status, manual trigger, **and KPI query**) — explicitly separate from `telemetry_events` and `GET /telemetry/report`. — [Destination](#destination), [Application integration](#application-integration)
-- [x] Define your **idempotency strategy**: if the pipeline fails during the load phase and is re-run, explain exactly how you guarantee that already-loaded data is neither corrupted nor duplicated. — [Idempotency](#idempotency)
-- [x] Design your **execution log**: specify the minimum fields you would record in every run (start time, end time, records processed, status, errors) and explain why each field is necessary to audit the pipeline in production. — [Execution log](#execution-log)
-- [x] Map your design to Prefect concepts: identify **at least one main flow** and **at least three tasks** (extract, transform, load as a minimum), plus which **states** (Running, Completed, Failed) are relevant. A second flow (e.g. backfill) is optional in Part 1 — Part 3 will raise the bar by splitting stages into **subflows**. — [Prefect mapping](#prefect-mapping)
-- [x] Indicate which configuration or credentials you would manage as **Prefect blocks** (for example, the connection to Supabase). — [Prefect mapping](#prefect-mapping)
-- [x] Sketch the **three** new endpoints in `services/reporting/` the business side will use: **status query**, **manual trigger**, and **KPI query** (the feed Part 3's dashboard will consume) — kept separate from `services/telemetry/` and the `GET /telemetry/report` endpoint. — [Application integration](#application-integration)
-- [x] For each endpoint, state which **function or flow in `data/pipelines/`** it will call — no ETL logic belongs in `services/`. — [Application integration](#application-integration)
-
-### What We Will Evaluate
-
-- [x] The file `data/pipelines/PIPELINE_DESIGN.md` exists in the monorepo and is written in readable Markdown. — this file
-- [x] `PIPELINE_DESIGN.md` has a Current State section plus the business gap (what the telemetry report does vs does not answer). — [Current State](#current-state), [Business gap](#business-gap)
-- [x] Extraction format is specified (source tables, payload shape, update cadence). — [Extraction format](#extraction-format)
-- [x] The pipeline purpose is defined in a single concrete sentence that names the business deliverable and KPI(s) from the company's `company-BRIEFING.md` — not a generic or technical KPI. — [Purpose](#purpose)
-- [x] The design does not modify `services/telemetry/analysis.py` or `GET /telemetry/report`, and does not write this pipeline's output into `telemetry_events` — output lives in new tables under a `reporting` schema and is exposed through a new `services/reporting/` module. Additive required-BRIEFING payload fields on existing event types are allowed. — [Destination](#destination), [What this part does not change](#what-this-part-does-not-change)
-- [x] The data flow diagram shows at least three distinct stages (extraction, transformation, load) with the real entity or table names from the company. — [Data flow](#data-flow)
-- [x] The strategy for handling updates to existing records is documented with a concrete mechanism (e.g., upsert by primary key, last-modified timestamp, control table). — [Updates to existing records](#updates-to-existing-records)
-- [x] The idempotency strategy is explicit: it describes what happens on the second run after a load-phase failure, not just what would be desirable. — [Idempotency](#idempotency)
-- [x] The execution log specifies at least five fields with the field name, data type, and justification for why that field is necessary for auditing. — [Execution log](#execution-log)
-- [x] The Prefect mapping identifies at least **one main flow** and **three tasks** with concrete names aligned with the pipeline stages (matches Part 2's implementation bar; Part 3 adds subflows). — [Prefect mapping](#prefect-mapping)
-- [x] The design documents at least **three** planned `services/reporting/` endpoints (status query, manual trigger, **and KPI query** for the dashboard) and names the `data/pipelines/` functions each will import. — [Application integration](#application-integration)
-- [x] The design is consistent with the telemetry events and mandatory metrics already defined in the company's BRIEFING file. — [Current State](#current-state), [Purpose](#purpose), [Extraction format](#extraction-format)
-
 Audience: Dr. Okonkwo (CEO) and Claire (Chief Compliance Officer).
 Cadence: monthly, ready on the first working day, for the previous calendar month in UTC.
 Deliverable: the Monthly Clinic Supply Performance Report.
