@@ -60,6 +60,9 @@ telemetry_router = _load_telemetry_router()
 async def lifespan(_app: FastAPI):
     if os.environ.get("DATABASE_URL", "").strip():
         init_schema()
+        from telemetry_storage import ensure_telemetry_table
+
+        ensure_telemetry_table()
         with Session(get_engine()) as session:
             seed_inventory(session)
     yield

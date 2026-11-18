@@ -7,3 +7,4 @@ tinydb>=4.9.0
 python-dotenv>=1.0.0
 sqlmodel>=0.0.24
 psycopg2-binary>=2.9.10
+jsonschema>=4.23.0

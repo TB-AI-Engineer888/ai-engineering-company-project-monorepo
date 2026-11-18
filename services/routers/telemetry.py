@@ -4,8 +4,9 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+import telemetry_storage
 from settings import telemetry_endpoint
 
 logger = logging.getLogger("healthcore.telemetry")
@@ -32,20 +33,40 @@ class TelemetryEvent(BaseModel):
     properties: dict[str, Any]
 
 
-class TelemetryBatch(BaseModel):
+class TelemetryIngest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    events: list[TelemetryEvent]
+    events: list[Any]
 
 
 @telemetry_router.post("/events")
-def receive_events(body: TelemetryBatch) -> dict[str, int]:
-    # Read the configured sink now. This phase accepts the batch here and does not forward it.
+def receive_events(body: TelemetryIngest) -> dict[str, int]:
+    # Read the configured sink. This phase stores the batch instead of forwarding it.
     _configured = telemetry_endpoint()
+    accepted: list[dict[str, Any]] = []
+    rejected = 0
+    for raw in body.events:
+        if not isinstance(raw, dict):
+            rejected += 1
+            continue
+        try:
+            TelemetryEvent.model_validate(raw)
+        except ValidationError:
+            rejected += 1
+            continue
+        row = telemetry_storage.row_for_event(raw)
+        if row is None:
+            rejected += 1
+            continue
+        accepted.append(row)
+    if accepted:
+        telemetry_storage.insert_telemetry_rows(accepted)
     logger.info(
-        "telemetry batch received=%s types=%s endpoint_configured=%s",
+        "telemetry batch received=%s stored=%s rejected=%s types=%s endpoint_configured=%s",
         len(body.events),
-        [event.event_type for event in body.events],
+        len(accepted),
+        rejected,
+        [row["event_type"] for row in accepted],
         bool(_configured),
     )
-    return {"received": len(body.events)}
+    return {"received": len(body.events), "stored": len(accepted), "rejected": rejected}
