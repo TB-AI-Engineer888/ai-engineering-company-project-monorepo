@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.hash import bcrypt
 
 from settings import access_token_expire_minutes, signing_secret
@@ -24,12 +24,23 @@ def create_access_token(user_id: int) -> str:
     return jwt.encode(payload, signing_secret(), algorithm=ALGORITHM)
 
 
+class InvalidToken(ValueError):
+    def __init__(self, reason: str) -> None:
+        super().__init__("invalid token")
+        self.reason = reason
+
+
 def decode_access_token(token: str) -> int:
     try:
         payload = jwt.decode(token, signing_secret(), algorithms=[ALGORITHM])
-        subject = payload.get("sub")
-        if subject is None:
-            raise JWTError("missing subject")
+    except ExpiredSignatureError:
+        raise InvalidToken("token_expired") from None
+    except JWTError:
+        raise InvalidToken("invalid") from None
+    subject = payload.get("sub")
+    if subject is None:
+        raise InvalidToken("invalid")
+    try:
         return int(subject)
-    except (JWTError, ValueError) as exc:
-        raise ValueError("invalid token") from exc
+    except (TypeError, ValueError):
+        raise InvalidToken("invalid") from None

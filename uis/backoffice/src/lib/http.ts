@@ -1,16 +1,19 @@
-import { clearToken, getToken } from "@/lib/session";
+import { clearSession, clearStaffId, clearToken, getToken } from "@/lib/session";
+import { recordLatency, track } from "@/services/telemetry";
 
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
   status: number;
   fields: FieldErrors;
+  failureReason: string | null;
 
-  constructor(message: string, status: number, fields: FieldErrors = {}) {
+  constructor(message: string, status: number, fields: FieldErrors = {}, failureReason: string | null = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.fields = fields;
+    this.failureReason = failureReason;
   }
 }
 
@@ -33,11 +36,13 @@ export async function apiRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
+  const startedAt = typeof performance === "undefined" ? 0 : performance.now();
   const response = await fetch(path, { ...init, headers });
+  recordLatency(path, init.method ?? "GET", response.status, startedAt);
 
-  if (options.session && response.status === 401 && options.redirectOn401 !== false) {
-    clearToken();
-    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+  if (options.session && response.status === 401) {
+    abandonSession(response);
+    if (options.redirectOn401 !== false && typeof window !== "undefined" && window.location.pathname !== "/login") {
       window.location.assign("/login");
     }
   }
@@ -45,12 +50,21 @@ export async function apiRequest<T>(
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     let fields: FieldErrors = {};
+    let failureReason: string | null = null;
     try {
       const payload = (await response.json()) as {
         error?: unknown;
         detail?: unknown;
         fields?: unknown;
+        failure_reason?: unknown;
       };
+      if (
+        payload.failure_reason === "unknown_user" ||
+        payload.failure_reason === "bad_password" ||
+        payload.failure_reason === "inactive_user"
+      ) {
+        failureReason = payload.failure_reason;
+      }
       if (typeof payload.error === "string") message = payload.error;
       else if (typeof payload.detail === "string") message = payload.detail;
       if (payload.fields && typeof payload.fields === "object") {
@@ -78,9 +92,20 @@ export async function apiRequest<T>(
     } catch {
       message = `Request failed (${response.status})`;
     }
-    throw new ApiError(message, response.status, fields);
+    throw new ApiError(message, response.status, fields, failureReason);
   }
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+export function abandonSession(response: Response): void {
+  const hadToken = Boolean(getToken());
+  const reason = response.headers.get("X-Auth-Reason");
+  if (hadToken && (reason === "token_expired" || reason === "inactive_user")) {
+    track("session_expired", { reason });
+  }
+  clearToken();
+  clearStaffId();
+  clearSession();
 }

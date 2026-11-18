@@ -41,7 +41,19 @@ def _load_inventory_router():
     return module.inventory_router
 
 
+def _load_telemetry_router():
+    path = _SERVICES_DIR / "routers" / "telemetry.py"
+    spec = importlib.util.spec_from_file_location("healthcore_telemetry_router", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load services/routers/telemetry.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.telemetry_router
+
+
 inventory_router = _load_inventory_router()
+telemetry_router = _load_telemetry_router()
 
 
 @asynccontextmanager
@@ -58,6 +70,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(inventory_router)
+app.include_router(telemetry_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -70,6 +83,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Auth-Reason"],
 )
 
 logger = logging.getLogger("api.timing")
@@ -174,4 +188,8 @@ def root() -> dict[str, str]:
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_request, exc: HTTPException) -> JSONResponse:
-    return JSONResponse(status_code=exc.status_code, content={"error": exc.detail, "status": exc.status_code})
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.detail, "status": exc.status_code},
+        headers=exc.headers,
+    )

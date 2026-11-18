@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
 import { ApiError } from "@/lib/http";
 import { login, registerAccount } from "@/lib/auth";
+import { track } from "@/services/telemetry";
 
 type FieldName = "email" | "password" | "name" | "phone" | "address";
 
@@ -49,14 +50,16 @@ export function RegisterForm() {
 
     setPending(true);
     try {
-      await registerAccount({
+      const created = await registerAccount({
         email: values.email.trim(),
         password: values.password,
         name: values.name.trim(),
         phone: values.phone.trim(),
         address: values.address.trim(),
       });
-      await login(values.email.trim(), values.password);
+      if (created.uuid) track("account_registered", { role: "user" });
+      const session = await login(values.email.trim(), values.password);
+      track("login_succeeded", { role: session.role });
       router.replace("/");
     } catch (caught) {
       if (caught instanceof ApiError) {

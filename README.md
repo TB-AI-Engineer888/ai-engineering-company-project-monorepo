@@ -37,6 +37,8 @@ Routes: `GET /inventory/products`, `POST /inventory/products`, `GET /inventory/p
 
 Stock is deliveries minus consumptions. It is not stored. Login stays in TinyDB. Inventory stays in Supabase.
 
+The backoffice captures telemetry through `uis/backoffice/src/services/telemetry.ts`. The only call site is `track(eventType, properties)`. The browser reads `NEXT_PUBLIC_TELEMETRY_ENDPOINT` (see `uis/backoffice/.env.example`) and posts batches to `POST /telemetry/events`. The API reads `TELEMETRY_ENDPOINT` (see `services/api/.env.example`) and, in this phase, validates the batch and returns `{ "received": N }`. `inventory_cache_summarised` is a server counter with no backoffice moment, so it is not captured here.
+
 ---
 
 # AI Engineering Company Project — Student Template

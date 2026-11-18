@@ -1,5 +1,5 @@
-import { clearToken, getToken } from "@/lib/session";
-import { apiRequest } from "@/lib/http";
+import { getToken } from "@/lib/session";
+import { abandonSession, apiRequest } from "@/lib/http";
 import type { AnalysisResult } from "@/lib/types";
 
 export async function analyzeIncidents(file: File): Promise<AnalysisResult> {
@@ -19,7 +19,7 @@ export async function downloadResultsCsv(): Promise<void> {
   });
 
   if (response.status === 401) {
-    clearToken();
+    abandonSession(response);
     if (typeof window !== "undefined" && window.location.pathname !== "/login") {
       window.location.assign("/login");
     }

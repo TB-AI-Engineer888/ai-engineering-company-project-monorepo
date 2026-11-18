@@ -1,4 +1,6 @@
-import { apiRequest } from "@/lib/http";
+import { ApiError, apiRequest } from "@/lib/http";
+import { briefingCategory, clinicCountry } from "@/services/inventory-events";
+import { track } from "@/services/telemetry";
 
 export type MedicalSupply = {
   id: number;
@@ -44,6 +46,15 @@ export type SupplyConsumptionInput = {
   quantity: number;
   consumption_type: "clinical_use" | "expiry_waste";
   clinic_id: number;
+  department?: string;
+};
+
+export type MedicalSupplyInput = {
+  name: string;
+  sku: string;
+  category: string;
+  unit: string;
+  country: string;
 };
 
 export type SupplyDeliveryRecord = {
@@ -91,20 +102,64 @@ export function readMedicalSupply(supplyId: number): Promise<MedicalSupply> {
   );
 }
 
+const STOCK_KEYS = ["current_stock", "stock", "quantity_on_hand", "on_hand"] as const;
+
+function stockRejection(
+  route: string,
+  method: "POST" | "PUT" | "PATCH",
+  body: object,
+  quantity: number,
+): void {
+  const record = body as Record<string, unknown>;
+  const clinic = typeof record.clinic_id === "number" ? record.clinic_id : null;
+  const product =
+    typeof record.supply_id === "number"
+      ? record.supply_id
+      : typeof record.product_id === "number"
+        ? record.product_id
+        : null;
+  track("direct_stock_edit_rejected", {
+    attempted_method: method,
+    attempted_route: route,
+    rejection_reason: "stock_mutable_only_through_orders",
+    quantity,
+    clinic_id: clinic,
+    country: clinic === null ? null : clinicCountry(clinic),
+    product_id: product,
+    product_category: typeof record.category === "string" ? briefingCategory(record.category) : null,
+  });
+}
+
+function rejectDirectStockEdit(route: string, method: "POST" | "PUT" | "PATCH", body: object): void {
+  const record = body as Record<string, unknown>;
+  const forbidden = STOCK_KEYS.find((key) => Object.prototype.hasOwnProperty.call(record, key));
+  if (!forbidden) return;
+  const raw = record[forbidden];
+  const quantity = typeof raw === "number" && Number.isInteger(raw) && raw >= 0 ? raw : 0;
+  stockRejection(route, method, body, quantity);
+  throw new ApiError("Stock is changed only through orders.", 403);
+}
+
+async function postInventory<T>(route: string, body: object): Promise<T> {
+  rejectDirectStockEdit(route, "POST", body);
+  try {
+    return await apiRequest<T>(inventoryUrl(route), { method: "POST", body: JSON.stringify(body) }, { session: true });
+  } catch (caught) {
+    if (caught instanceof ApiError && caught.status === 403) stockRejection(route, "POST", body, 0);
+    throw caught;
+  }
+}
+
+export function createMedicalSupply(input: MedicalSupplyInput): Promise<MedicalSupply> {
+  return postInventory<MedicalSupply>("/inventory/products", input);
+}
+
 export function createSupplyDelivery(input: SupplyDeliveryInput): Promise<SupplyDeliveryRecord> {
-  return apiRequest<SupplyDeliveryRecord>(
-    inventoryUrl("/inventory/orders/inbound"),
-    { method: "POST", body: JSON.stringify(input) },
-    { session: true },
-  );
+  return postInventory<SupplyDeliveryRecord>("/inventory/orders/inbound", input);
 }
 
 export function createSupplyConsumption(input: SupplyConsumptionInput): Promise<SupplyConsumptionRecord> {
-  return apiRequest<SupplyConsumptionRecord>(
-    inventoryUrl("/inventory/orders/outbound"),
-    { method: "POST", body: JSON.stringify(input) },
-    { session: true },
-  );
+  return postInventory<SupplyConsumptionRecord>("/inventory/orders/outbound", input);
 }
 
 export function listInventoryOrders(): Promise<InventoryOrder[]> {

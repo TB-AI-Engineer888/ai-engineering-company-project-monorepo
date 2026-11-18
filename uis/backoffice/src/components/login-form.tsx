@@ -7,6 +7,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
 import { login } from "@/lib/auth";
+import { ApiError } from "@/lib/http";
+import { track } from "@/services/telemetry";
 
 export function LoginForm() {
   const router = useRouter();
@@ -20,9 +22,13 @@ export function LoginForm() {
     setError(null);
     setPending(true);
     try {
-      await login(email, password);
+      const session = await login(email, password);
+      track("login_succeeded", { role: session.role });
       router.replace("/");
     } catch (caught) {
+      if (caught instanceof ApiError && caught.failureReason) {
+        track("login_failed", { failure_reason: caught.failureReason });
+      }
       setError(caught instanceof Error ? caught.message : "Sign-in failed.");
     } finally {
       setPending(false);
