@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft7Validator, FormatChecker
-from sqlalchemy import text
+from sqlalchemy import Column, DateTime, MetaData, Numeric, Table, Text, text
+from sqlalchemy.dialects.postgresql import JSONB
 
 from database import get_engine
 
@@ -49,19 +50,16 @@ CREATE INDEX IF NOT EXISTS telemetry_events_event_type_idx ON telemetry_events (
 CREATE INDEX IF NOT EXISTS telemetry_events_tags_idx ON telemetry_events USING GIN (tags);
 """
 
-_INSERT = text(
-    """
-    INSERT INTO telemetry_events (timestamp, service, event_type, level, value, message, tags)
-    VALUES (
-        :timestamp,
-        :service,
-        :event_type,
-        :level,
-        :value,
-        :message,
-        CAST(:tags AS jsonb)
-    )
-    """
+_EVENTS = Table(
+    "telemetry_events",
+    MetaData(),
+    Column("timestamp", DateTime(timezone=True)),
+    Column("service", Text),
+    Column("event_type", Text),
+    Column("level", Text),
+    Column("value", Numeric),
+    Column("message", Text),
+    Column("tags", JSONB),
 )
 
 _validators: dict[str, Draft7Validator] | None = None
@@ -151,5 +149,12 @@ def insert_telemetry_rows(rows: list[dict[str, Any]]) -> None:
     if not rows:
         return
     ensure_telemetry_table()
+    payload = []
+    for row in rows:
+        stored = dict(row)
+        tags = stored["tags"]
+        stored["tags"] = json.loads(tags) if isinstance(tags, str) else tags
+        payload.append(stored)
+    statement = _EVENTS.insert().values(payload)
     with get_engine().begin() as connection:
-        connection.execute(_INSERT, rows)
+        connection.execute(statement)
