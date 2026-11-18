@@ -3,10 +3,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from settings import telemetry_endpoint
+from telemetry.report import PeriodError, cached_report, resolve_period
 
 logger = logging.getLogger("healthcore.telemetry")
 logger.setLevel(logging.INFO)
@@ -49,3 +50,12 @@ def receive_events(body: TelemetryBatch) -> dict[str, int]:
         bool(_configured),
     )
     return {"received": len(body.events)}
+
+
+@telemetry_router.get("/report")
+def telemetry_report(start_date: str | None = None, end_date: str | None = None) -> dict:
+    try:
+        start, end = resolve_period(start_date, end_date)
+    except PeriodError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return cached_report(start, end)
