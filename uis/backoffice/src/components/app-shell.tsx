@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleUser, ClipboardList, FileBarChart, HeartPulse, LayoutDashboard, Package } from "lucide-react";
+import { Activity, CircleUser, ClipboardList, FileBarChart, HeartPulse, LayoutDashboard, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/backoffice/inventory/products", label: "Medical supplies", icon: Package },
   { href: "/backoffice/inventory/orders", label: "Supply orders", icon: ClipboardList },
   { href: "/incidents", label: "Incident analyzer", icon: FileBarChart },
+  { href: "/telemetry", label: "Telemetry", icon: Activity },
   { href: "/account/profile", label: "Account profile", icon: CircleUser },
 ];
 
@@ -23,6 +24,7 @@ function sectionTitle(pathname: string) {
   if (pathname.startsWith("/backoffice/inventory/orders")) return "Supply orders";
   if (pathname.startsWith("/backoffice/inventory")) return "Medical supplies";
   if (pathname.startsWith("/incidents")) return "Incident analyzer";
+  if (pathname.startsWith("/telemetry")) return "Telemetry";
   if (pathname.startsWith("/account")) return "Account";
   return "Operations overview";
 }
