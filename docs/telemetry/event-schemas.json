@@ -1,0 +1,3027 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:healthcore:telemetry:catalogue",
+  "title": "HealthCore telemetry event schemas",
+  "description": "Catalogue of draft-07 schemas for HealthCore telemetry. Validate an emitted event with events.<event_type>.schema. classification, hypothesis, decision, delivery, throttle, sensitive_data, and allowlist are design metadata and are not fields on the wire event. Every event schema sets additionalProperties to false on the envelope and on properties.",
+  "schemaVersion": 1,
+  "envelope_fields": [
+    "eventId",
+    "timestamp",
+    "sessionId",
+    "userId",
+    "event_type",
+    "schemaVersion",
+    "requestId",
+    "properties"
+  ],
+  "events": {
+    "inbound_order_created": {
+      "event_type": "inbound_order_created",
+      "classification": "mandatory",
+      "category": "business",
+      "emitter": "server",
+      "description": "A clinic committed a supply receipt from a vendor.",
+      "hypothesis": "how much and what supply is being purchased, by clinic and vendor",
+      "decision": "to consolidate purchasing across clinics and negotiate better vendor terms",
+      "delivery": "batch",
+      "delivery_justification": "Vendor consolidation is a purchasing review. A daily batch is soon enough for that decision. The stockout decision is a separate stream event.",
+      "throttle": "One event for each committed inbound order. No sampling.",
+      "anchor": "Emit from create_inbound_order in services/routers/inventory.py after session.commit() succeeds on POST /inventory/orders/inbound.",
+      "sensitive_data": "vendor_name is the organisation on the delivery, which the purchasing decision needs. The pattern rejects free text long enough to carry a sentence. No staff name, email, or patient field is accepted.",
+      "allowlist": [
+        {
+          "name": "clinic_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinic that owns this stock movement. Values are 1 through 12."
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+        },
+        {
+          "name": "product_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "medical_supplies.id of the supply."
+        },
+        {
+          "name": "product_category",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Supply units this event is about. The event description says which quantity."
+        },
+        {
+          "name": "order_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "supply_deliveries.id of the committed receipt."
+        },
+        {
+          "name": "vendor_name",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Vendor organisation recorded on the delivery."
+        },
+        {
+          "name": "sku",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "medical_supplies.sku, copied so the batch can be read without a join."
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Unit stored on the supply: box, unit, pack, or vial."
+        },
+        {
+          "name": "country_mismatch",
+          "type": "boolean",
+          "required": true,
+          "sensitive": false,
+          "description": "True when medical_supplies.country differs from the clinic country. The event still uses the clinic country."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:inbound_order_created",
+        "title": "inbound_order_created",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "inbound_order_created"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clinic_id",
+              "country",
+              "product_id",
+              "product_category",
+              "quantity",
+              "order_id",
+              "vendor_name",
+              "sku",
+              "unit",
+              "country_mismatch"
+            ],
+            "properties": {
+              "clinic_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12,
+                "description": "Clinic that owns this stock movement. Values are 1 through 12."
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "US",
+                  "UK"
+                ],
+                "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+              },
+              "product_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "medical_supplies.id of the supply."
+              },
+              "product_category": {
+                "type": "string",
+                "enum": [
+                  "medication",
+                  "ppe",
+                  "consumable",
+                  "equipment"
+                ],
+                "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Supply units this event is about. The event description says which quantity."
+              },
+              "order_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "supply_deliveries.id of the committed receipt."
+              },
+              "vendor_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,&'()-]{0,119}$",
+                "description": "Vendor organisation recorded on the delivery."
+              },
+              "sku": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "pattern": "^[A-Za-z0-9._-]{1,40}$",
+                "description": "medical_supplies.sku, copied so the batch can be read without a join."
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "box",
+                  "unit",
+                  "pack",
+                  "vial"
+                ],
+                "description": "Unit stored on the supply: box, unit, pack, or vial."
+              },
+              "country_mismatch": {
+                "type": "boolean",
+                "description": "True when medical_supplies.country differs from the clinic country. The event still uses the clinic country."
+              }
+            }
+          }
+        }
+      }
+    },
+    "outbound_order_created": {
+      "event_type": "outbound_order_created",
+      "classification": "mandatory",
+      "category": "business",
+      "emitter": "server",
+      "description": "A clinic committed consumption of a supply for a department.",
+      "hypothesis": "which supplies are consumed most, and at what rate, by clinic and department",
+      "decision": "to adjust automatic replenishment of critical supplies per clinic",
+      "delivery": "batch",
+      "delivery_justification": "Replenishment quantities are set from a consumption rate. The daily batch answers that. A same-shift shortage is stock_threshold_triggered, which is stream.",
+      "throttle": "One event for each committed outbound order. No sampling.",
+      "anchor": "Emit from create_outbound_order in services/routers/inventory.py after session.commit() succeeds on POST /inventory/orders/outbound. Refuse to emit when department is absent.",
+      "sensitive_data": "department is one of four clinical-area codes. consumption_type is clinical_use or expiry_waste. Neither field has room for a person.",
+      "allowlist": [
+        {
+          "name": "clinic_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinic that owns this stock movement. Values are 1 through 12."
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+        },
+        {
+          "name": "product_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "medical_supplies.id of the supply."
+        },
+        {
+          "name": "product_category",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Supply units this event is about. The event description says which quantity."
+        },
+        {
+          "name": "department",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinical area that consumed the supply. Never a patient, staff name, or record number."
+        },
+        {
+          "name": "order_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "supply_consumptions.id of the committed consumption."
+        },
+        {
+          "name": "consumption_type",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Value stored on the consumption row."
+        },
+        {
+          "name": "sku",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "medical_supplies.sku."
+        },
+        {
+          "name": "clinic_stock_after",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Units of this product remaining at this clinic after the commit. Sum deliveries and consumptions for this clinic_id and product_id only."
+        },
+        {
+          "name": "global_stock_after",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Value current_stock() returns for this product after the commit. The live 400 check uses this global total."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:outbound_order_created",
+        "title": "outbound_order_created",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "outbound_order_created"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clinic_id",
+              "country",
+              "product_id",
+              "product_category",
+              "quantity",
+              "department",
+              "order_id",
+              "consumption_type",
+              "sku",
+              "clinic_stock_after",
+              "global_stock_after"
+            ],
+            "properties": {
+              "clinic_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12,
+                "description": "Clinic that owns this stock movement. Values are 1 through 12."
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "US",
+                  "UK"
+                ],
+                "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+              },
+              "product_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "medical_supplies.id of the supply."
+              },
+              "product_category": {
+                "type": "string",
+                "enum": [
+                  "medication",
+                  "ppe",
+                  "consumable",
+                  "equipment"
+                ],
+                "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Supply units this event is about. The event description says which quantity."
+              },
+              "department": {
+                "type": "string",
+                "enum": [
+                  "primary_care",
+                  "specialty_care",
+                  "chronic_care",
+                  "general_consultation"
+                ],
+                "description": "Clinical area that consumed the supply. Never a patient, staff name, or record number."
+              },
+              "order_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "supply_consumptions.id of the committed consumption."
+              },
+              "consumption_type": {
+                "type": "string",
+                "enum": [
+                  "clinical_use",
+                  "expiry_waste"
+                ],
+                "description": "Value stored on the consumption row."
+              },
+              "sku": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "pattern": "^[A-Za-z0-9._-]{1,40}$",
+                "description": "medical_supplies.sku."
+              },
+              "clinic_stock_after": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Units of this product remaining at this clinic after the commit. Sum deliveries and consumptions for this clinic_id and product_id only."
+              },
+              "global_stock_after": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Value current_stock() returns for this product after the commit. The live 400 check uses this global total."
+              }
+            }
+          }
+        }
+      }
+    },
+    "stock_threshold_triggered": {
+      "event_type": "stock_threshold_triggered",
+      "classification": "mandatory",
+      "category": "business",
+      "emitter": "server",
+      "description": "Clinic-scoped stock for a supply crossed from at or above its minimum to below it.",
+      "hypothesis": "how often a clinic runs short of a critical supply (for example PPE or medication)",
+      "decision": "to prioritise urgent restocking and escalate to Marcus (Clinical Operations)",
+      "delivery": "stream",
+      "delivery_justification": "Marcus acts during the same shift. A nightly batch can miss a clinic that runs out of PPE this afternoon.",
+      "throttle": "Emit on the crossing. While stock stays below the minimum, emit at most once more per clinic_id, product_id, and band per UTC day. A jump from healthy stock to zero emits one event with band out.",
+      "anchor": "After a successful outbound commit, recompute clinic-scoped stock. The minimum is 10 until a per-product minimum exists, matching LOW_STOCK_AT_OR_BELOW in uis/backoffice/src/lib/stock-level.ts. Band low is 1 through 10. Band out is 0.",
+      "sensitive_data": "Counts and identifiers of supplies and clinics only.",
+      "allowlist": [
+        {
+          "name": "clinic_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinic that owns this stock movement. Values are 1 through 12."
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+        },
+        {
+          "name": "product_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "medical_supplies.id of the supply."
+        },
+        {
+          "name": "product_category",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Supply units this event is about. The event description says which quantity."
+        },
+        {
+          "name": "threshold_quantity",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Minimum that was crossed. Use 10 until a product-level minimum is stored."
+        },
+        {
+          "name": "band",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "low when clinic stock is 1 through 10. out when clinic stock is 0."
+        },
+        {
+          "name": "stock_before",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinic-scoped units immediately before this order."
+        },
+        {
+          "name": "trigger_order_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "supply_consumptions.id that caused the crossing."
+        },
+        {
+          "name": "trigger_order_kind",
+          "type": "const",
+          "required": true,
+          "sensitive": false,
+          "description": "Stock falls only when an outbound order commits."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:stock_threshold_triggered",
+        "title": "stock_threshold_triggered",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "stock_threshold_triggered"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clinic_id",
+              "country",
+              "product_id",
+              "product_category",
+              "quantity",
+              "threshold_quantity",
+              "band",
+              "stock_before",
+              "trigger_order_id",
+              "trigger_order_kind"
+            ],
+            "properties": {
+              "clinic_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12,
+                "description": "Clinic that owns this stock movement. Values are 1 through 12."
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "US",
+                  "UK"
+                ],
+                "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+              },
+              "product_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "medical_supplies.id of the supply."
+              },
+              "product_category": {
+                "type": "string",
+                "enum": [
+                  "medication",
+                  "ppe",
+                  "consumable",
+                  "equipment"
+                ],
+                "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Supply units this event is about. The event description says which quantity."
+              },
+              "threshold_quantity": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Minimum that was crossed. Use 10 until a product-level minimum is stored."
+              },
+              "band": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "out"
+                ],
+                "description": "low when clinic stock is 1 through 10. out when clinic stock is 0."
+              },
+              "stock_before": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Clinic-scoped units immediately before this order."
+              },
+              "trigger_order_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "supply_consumptions.id that caused the crossing."
+              },
+              "trigger_order_kind": {
+                "const": "outbound",
+                "description": "Stock falls only when an outbound order commits."
+              }
+            }
+          }
+        }
+      }
+    },
+    "direct_stock_edit_rejected": {
+      "event_type": "direct_stock_edit_rejected",
+      "classification": "mandatory",
+      "category": "business",
+      "emitter": "server",
+      "description": "A caller tried to set stock outside an inbound or outbound order, and the API rejected the call.",
+      "hypothesis": "if staff are attempting to bypass supply traceability controls",
+      "decision": "to reinforce training or permissions at the clinic where this happens most",
+      "delivery": "stream",
+      "delivery_justification": "The person is blocked on this request and may try another path during the same shift. The clinic lead needs the rejection the same day, which a nightly batch can miss.",
+      "throttle": "One event for each rejected request. No sampling. A repeated attempt is itself the signal.",
+      "anchor": "On POST /inventory/products, POST /inventory/orders/inbound, and POST /inventory/orders/outbound, read the raw JSON first. If the object contains current_stock, stock, quantity_on_hand, or on_hand, return 403 and emit this event. The create models today drop unknown keys, so the check has to see the raw object. Also reject PUT or PATCH /inventory/products/{supply_id} and POST /inventory/stock, which are not implemented, with the same 403 and the same event.",
+      "sensitive_data": "Record the attempted supply quantity and the route template. Do not copy any other body field. A free-text note is not on the allowlist.",
+      "allowlist": [
+        {
+          "name": "attempted_method",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "HTTP method of the rejected call."
+        },
+        {
+          "name": "attempted_route",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Route template, with identifiers replaced. Example: /inventory/products/{supply_id}."
+        },
+        {
+          "name": "rejection_reason",
+          "type": "const",
+          "required": true,
+          "sensitive": false,
+          "description": "Fixed reason. Stock changes only through SupplyDelivery or SupplyConsumption."
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Attempted stock quantity. Use 0 when the forbidden key was present without a number."
+        },
+        {
+          "name": "clinic_id",
+          "type": "anyOf",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinic id when the body included a valid clinic_id. Otherwise null."
+        },
+        {
+          "name": "country",
+          "type": "anyOf",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinic country when clinic_id resolved. Otherwise null."
+        },
+        {
+          "name": "product_id",
+          "type": "anyOf",
+          "required": true,
+          "sensitive": false,
+          "description": "Supply id when the body or the path included one. Otherwise null."
+        },
+        {
+          "name": "product_category",
+          "type": "anyOf",
+          "required": true,
+          "sensitive": false,
+          "description": "Mapped briefing category when the supply row exists. Otherwise null."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:direct_stock_edit_rejected",
+        "title": "direct_stock_edit_rejected",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "direct_stock_edit_rejected"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "attempted_method",
+              "attempted_route",
+              "rejection_reason",
+              "quantity",
+              "clinic_id",
+              "country",
+              "product_id",
+              "product_category"
+            ],
+            "properties": {
+              "attempted_method": {
+                "type": "string",
+                "enum": [
+                  "POST",
+                  "PUT",
+                  "PATCH"
+                ],
+                "description": "HTTP method of the rejected call."
+              },
+              "attempted_route": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": "^/[A-Za-z0-9_./{}-]{0,119}$",
+                "description": "Route template, with identifiers replaced. Example: /inventory/products/{supply_id}."
+              },
+              "rejection_reason": {
+                "const": "stock_mutable_only_through_orders",
+                "description": "Fixed reason. Stock changes only through SupplyDelivery or SupplyConsumption."
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Attempted stock quantity. Use 0 when the forbidden key was present without a number."
+              },
+              "clinic_id": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Clinic id when the body included a valid clinic_id. Otherwise null."
+              },
+              "country": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "US",
+                      "UK"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Clinic country when clinic_id resolved. Otherwise null."
+              },
+              "product_id": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Supply id when the body or the path included one. Otherwise null."
+              },
+              "product_category": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "medication",
+                      "ppe",
+                      "consumable",
+                      "equipment"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Mapped briefing category when the supply row exists. Otherwise null."
+              }
+            }
+          }
+        }
+      }
+    },
+    "supply_expiry_flagged": {
+      "event_type": "supply_expiry_flagged",
+      "classification": "mandatory",
+      "category": "business",
+      "emitter": "server",
+      "description": "A supply batch at a clinic is inside 30 days of expires_on, or is already past that date and still has quantity.",
+      "hypothesis": "which supplies are about to expire before they become waste or a compliance risk",
+      "decision": "to prioritise use or controlled disposal of that batch before expiry",
+      "delivery": "batch",
+      "delivery_justification": "Disposal and use-first planning is a morning operations list. The event is written when the batch is received and again by the daily sweep, and the purchasing batch consumes it the same day. Shelving control reads expires_on on the batch row at receipt time.",
+      "throttle": "At most one event per lot_id and clinic_id per UTC day.",
+      "anchor": "Requires a SupplyBatch row (product_id, clinic_id, lot_id, expires_on) referenced by the inbound order. expires_on is stored on that batch, which belongs to the product. A receipt of a batch already inside the window writes the event in that request. A daily sweep writes the event for every batch with days_to_expiry of 30 or less and remaining quantity above zero.",
+      "sensitive_data": "lot_id allows only letters, digits, dot, underscore, and hyphen, with a maximum of 40 characters, so a name or sentence cannot be stored in it.",
+      "allowlist": [
+        {
+          "name": "clinic_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinic that owns this stock movement. Values are 1 through 12."
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+        },
+        {
+          "name": "product_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "medical_supplies.id of the supply."
+        },
+        {
+          "name": "product_category",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Supply units this event is about. The event description says which quantity."
+        },
+        {
+          "name": "lot_id",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Batch code stored on SupplyBatch."
+        },
+        {
+          "name": "expires_on",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Expiry date stored on the batch, YYYY-MM-DD."
+        },
+        {
+          "name": "days_to_expiry",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Whole UTC days from today until expires_on. Negative means already expired."
+        },
+        {
+          "name": "trigger",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "receipt when the inbound request created an in-window batch. daily_sweep for the morning job."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:supply_expiry_flagged",
+        "title": "supply_expiry_flagged",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "supply_expiry_flagged"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clinic_id",
+              "country",
+              "product_id",
+              "product_category",
+              "quantity",
+              "lot_id",
+              "expires_on",
+              "days_to_expiry",
+              "trigger"
+            ],
+            "properties": {
+              "clinic_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12,
+                "description": "Clinic that owns this stock movement. Values are 1 through 12."
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "US",
+                  "UK"
+                ],
+                "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+              },
+              "product_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "medical_supplies.id of the supply."
+              },
+              "product_category": {
+                "type": "string",
+                "enum": [
+                  "medication",
+                  "ppe",
+                  "consumable",
+                  "equipment"
+                ],
+                "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Supply units this event is about. The event description says which quantity."
+              },
+              "lot_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "pattern": "^[A-Za-z0-9._-]{1,40}$",
+                "description": "Batch code stored on SupplyBatch."
+              },
+              "expires_on": {
+                "type": "string",
+                "format": "date",
+                "description": "Expiry date stored on the batch, YYYY-MM-DD."
+              },
+              "days_to_expiry": {
+                "type": "integer",
+                "minimum": -3650,
+                "maximum": 30,
+                "description": "Whole UTC days from today until expires_on. Negative means already expired."
+              },
+              "trigger": {
+                "type": "string",
+                "enum": [
+                  "receipt",
+                  "daily_sweep"
+                ],
+                "description": "receipt when the inbound request created an in-window batch. daily_sweep for the morning job."
+              }
+            }
+          }
+        }
+      }
+    },
+    "product_registered": {
+      "event_type": "product_registered",
+      "classification": "identified_opportunity",
+      "category": "business",
+      "emitter": "server",
+      "description": "A staff user registered a new medical supply.",
+      "hypothesis": "which supply categories the catalogue is growing in, and in which country",
+      "decision": "to spot a clinic country whose catalogue is missing a critical category before a stockout shows it",
+      "delivery": "batch",
+      "delivery_justification": "Catalogue review is periodic. The register action itself is confirmed by the HTTP 201 the user already sees.",
+      "throttle": "One event for each committed product. No sampling.",
+      "anchor": "Emit from create_product in services/routers/inventory.py after session.commit() on POST /inventory/products returns 201.",
+      "sensitive_data": "The product name is omitted. Names are operationally useful and also a place a person could type a patient. sku, category, unit, and country answer the catalogue decision.",
+      "allowlist": [
+        {
+          "name": "product_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "medical_supplies.id of the new row."
+        },
+        {
+          "name": "sku",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "SKU stored on the new supply."
+        },
+        {
+          "name": "product_category",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Briefing category after the stored-category map."
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Unit stored on the supply."
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Country stored on the product. A product is not tied to one clinic."
+        },
+        {
+          "name": "quantity",
+          "type": "const",
+          "required": true,
+          "sensitive": false,
+          "description": "A new product has no stock until an inbound order. Always 0."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:product_registered",
+        "title": "product_registered",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "product_registered"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "product_id",
+              "sku",
+              "product_category",
+              "unit",
+              "country",
+              "quantity"
+            ],
+            "properties": {
+              "product_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "medical_supplies.id of the new row."
+              },
+              "sku": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "pattern": "^[A-Za-z0-9._-]{1,40}$",
+                "description": "SKU stored on the new supply."
+              },
+              "product_category": {
+                "type": "string",
+                "enum": [
+                  "medication",
+                  "ppe",
+                  "consumable",
+                  "equipment"
+                ],
+                "description": "Briefing category after the stored-category map."
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "box",
+                  "unit",
+                  "pack",
+                  "vial"
+                ],
+                "description": "Unit stored on the supply."
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "US",
+                  "UK"
+                ],
+                "description": "Country stored on the product. A product is not tied to one clinic."
+              },
+              "quantity": {
+                "const": 0,
+                "description": "A new product has no stock until an inbound order. Always 0."
+              }
+            }
+          }
+        }
+      }
+    },
+    "incident_analysis_completed": {
+      "event_type": "incident_analysis_completed",
+      "classification": "identified_opportunity",
+      "category": "business",
+      "emitter": "server",
+      "description": "The incident analyser accepted a CSV and produced a result.",
+      "hypothesis": "how often staff run the incident analyser and how large those extracts are",
+      "decision": "to keep or retire the analyser once inventory telemetry is carrying the operational questions",
+      "delivery": "batch",
+      "delivery_justification": "The user already has the HTTP response. Whether the tool is still used is a periodic product decision.",
+      "throttle": "One event for each successful POST /api/incidents/analyze. Failures are inventory-unrelated validation and are excluded.",
+      "anchor": "Emit from analyze_incidents in services/api/main.py after analyze_csv_bytes returns. source_kind is sample only when the client used the sample endpoint's file; otherwise upload.",
+      "sensitive_data": "The filename, the CSV body, and every incident cell are excluded. A filename or a cell can carry a person. row_count and duration_ms describe the job without the contents.",
+      "allowlist": [
+        {
+          "name": "source_kind",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "upload for a caller-supplied file. sample for the bundled sample CSV."
+        },
+        {
+          "name": "row_count",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Data rows accepted by the analyser."
+        },
+        {
+          "name": "duration_ms",
+          "type": "number",
+          "required": true,
+          "sensitive": false,
+          "description": "Server time spent inside analyze_csv_bytes."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:incident_analysis_completed",
+        "title": "incident_analysis_completed",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "incident_analysis_completed"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_kind",
+              "row_count",
+              "duration_ms"
+            ],
+            "properties": {
+              "source_kind": {
+                "type": "string",
+                "enum": [
+                  "upload",
+                  "sample"
+                ],
+                "description": "upload for a caller-supplied file. sample for the bundled sample CSV."
+              },
+              "row_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Data rows accepted by the analyser."
+              },
+              "duration_ms": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Server time spent inside analyze_csv_bytes."
+              }
+            }
+          }
+        }
+      }
+    },
+    "login_succeeded": {
+      "event_type": "login_succeeded",
+      "classification": "identified_opportunity",
+      "category": "authentication",
+      "emitter": "server",
+      "description": "A staff account received a bearer token.",
+      "hypothesis": "which staff roles open the backoffice, and whether clinic staff can sign in during operating hours",
+      "decision": "to revoke unused privileged roles and to confirm inventory stays reachable during clinic hours",
+      "delivery": "stream",
+      "delivery_justification": "A locked-out clinic cannot record consumption. The same shift is the window in which access has to be restored.",
+      "throttle": "One event for each successful POST /auth/login. No sampling.",
+      "anchor": "Emit from login in services/api/routers.py after authenticate succeeds. Return uuid and role from authenticate for the emitter. The HTTP body remains access_token and token_type.",
+      "sensitive_data": "Role is an application permission, not a person. Email stays out of the event. userId is the staff uuid.",
+      "allowlist": [
+        {
+          "name": "role",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "users.role of the account that signed in."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:login_succeeded",
+        "title": "login_succeeded",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "userId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "event_type": {
+            "const": "login_succeeded"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "role"
+            ],
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": [
+                  "admin",
+                  "manager",
+                  "user"
+                ],
+                "description": "users.role of the account that signed in."
+              }
+            }
+          }
+        }
+      }
+    },
+    "login_failed": {
+      "event_type": "login_failed",
+      "classification": "identified_opportunity",
+      "category": "authentication",
+      "emitter": "server",
+      "description": "POST /auth/login refused a credential.",
+      "hypothesis": "how many sign-in attempts fail, and whether the cause is an unknown account, a bad password, or an inactive account",
+      "decision": "to reset access for a clinic that is locked out, or to investigate repeated failures against the login form",
+      "delivery": "stream",
+      "delivery_justification": "A clinic that cannot sign in cannot record receipts or consumption. That is a same-shift operations problem.",
+      "throttle": "Every failure is emitted. Sampling would hide a burst.",
+      "anchor": "authenticate in services/api/users.py currently raises one ValueError for an unknown user, an inactive user, and a bad password. Split those internal causes. The HTTP detail stays Incorrect email or password.",
+      "sensitive_data": "The attempted email, password, and IP address are excluded. failure_reason is one of three codes. userId and sessionId are null because no session exists.",
+      "allowlist": [
+        {
+          "name": "failure_reason",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Internal cause. The client still receives one generic 401 message."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:login_failed",
+        "title": "login_failed",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "type": "null"
+          },
+          "userId": {
+            "type": "null"
+          },
+          "event_type": {
+            "const": "login_failed"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "failure_reason"
+            ],
+            "properties": {
+              "failure_reason": {
+                "type": "string",
+                "enum": [
+                  "unknown_user",
+                  "bad_password",
+                  "inactive_user"
+                ],
+                "description": "Internal cause. The client still receives one generic 401 message."
+              }
+            }
+          }
+        }
+      }
+    },
+    "session_expired": {
+      "event_type": "session_expired",
+      "classification": "identified_opportunity",
+      "category": "authentication",
+      "emitter": "server",
+      "description": "A request carried a bearer token that is no longer usable.",
+      "hypothesis": "whether working sessions die because the token lapsed or because the account was deactivated",
+      "decision": "to change ACCESS_TOKEN_EXPIRE_MINUTES, and to see accounts closed while someone is still in the backoffice",
+      "delivery": "stream",
+      "delivery_justification": "A session that dies in the middle of a receipt is a same-shift failure. The client already redirects to /login on 401.",
+      "throttle": "One event per rejected request whose token was present and unusable. A missing Authorization header does not emit this event.",
+      "anchor": "Emit from get_current_user in services/api/deps.py. ExpiredSignatureError maps to token_expired. A token whose user is inactive maps to inactive_user. Other JWT failures stay a 401 without this event, because they are not an expired session.",
+      "sensitive_data": "The token is not copied. userId is the uuid when the subject still resolves to a user, and null when it does not.",
+      "allowlist": [
+        {
+          "name": "reason",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Why the presented token was refused."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:session_expired",
+        "title": "session_expired",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "session_expired"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reason"
+            ],
+            "properties": {
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "token_expired",
+                  "inactive_user"
+                ],
+                "description": "Why the presented token was refused."
+              }
+            }
+          }
+        }
+      }
+    },
+    "account_registered": {
+      "event_type": "account_registered",
+      "classification": "identified_opportunity",
+      "category": "authentication",
+      "emitter": "server",
+      "description": "POST /users created a staff account.",
+      "hypothesis": "whether clinic staff create their own accounts or only the seeded administrator is in use",
+      "decision": "to keep open self-service registration or replace it with an invite",
+      "delivery": "batch",
+      "delivery_justification": "Registration volume is a periodic access-policy decision. The new user already receives the HTTP 201.",
+      "throttle": "One event for each created account. No sampling.",
+      "anchor": "Emit from register_user in services/api/routers.py after create_user and create_profile succeed. The public route always assigns role user.",
+      "sensitive_data": "The request carries email, password, name, phone, and address. None of those are on the allowlist. userId is the new uuid. sessionId is null because the client does not start a session in registerAccount.",
+      "allowlist": [
+        {
+          "name": "role",
+          "type": "const",
+          "required": true,
+          "sensitive": false,
+          "description": "Role assigned by the public registration route."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:account_registered",
+        "title": "account_registered",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "type": "null"
+          },
+          "userId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "event_type": {
+            "const": "account_registered"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "role"
+            ],
+            "properties": {
+              "role": {
+                "const": "user",
+                "description": "Role assigned by the public registration route."
+              }
+            }
+          }
+        }
+      }
+    },
+    "outbound_order_rejected": {
+      "event_type": "outbound_order_rejected",
+      "classification": "identified_opportunity",
+      "category": "errors",
+      "emitter": "server",
+      "description": "POST /inventory/orders/outbound returned 400 because the requested quantity exceeded global stock.",
+      "hypothesis": "which clinic and supply combinations ask for more stock than the global total allows",
+      "decision": "to restock that supply, or to replace the global 400 check with a clinic-scoped check if the rejections do not match clinic shortages",
+      "delivery": "stream",
+      "delivery_justification": "The operator is blocked on this attempt. Same-shift restock is the decision the rejection is for.",
+      "throttle": "One event for each 400 insufficient-stock response. No sampling.",
+      "anchor": "Emit from create_outbound_order when body.quantity is greater than current_stock(). Do not also emit inventory_validation_failed for that same rejection.",
+      "sensitive_data": "Department is the clinical-area code once the field exists on the form. The API error string is not copied, because it includes the supply name and the two quantities are already structured.",
+      "allowlist": [
+        {
+          "name": "clinic_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinic that owns this stock movement. Values are 1 through 12."
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+        },
+        {
+          "name": "product_id",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "medical_supplies.id of the supply."
+        },
+        {
+          "name": "product_category",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Supply units this event is about. The event description says which quantity."
+        },
+        {
+          "name": "department",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Clinical area that consumed the supply. Never a patient, staff name, or record number."
+        },
+        {
+          "name": "available_global",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "current_stock() value the handler compared against the request."
+        },
+        {
+          "name": "rejection_reason",
+          "type": "const",
+          "required": true,
+          "sensitive": false,
+          "description": "Fixed reason for this event."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:outbound_order_rejected",
+        "title": "outbound_order_rejected",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "outbound_order_rejected"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clinic_id",
+              "country",
+              "product_id",
+              "product_category",
+              "quantity",
+              "department",
+              "available_global",
+              "rejection_reason"
+            ],
+            "properties": {
+              "clinic_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12,
+                "description": "Clinic that owns this stock movement. Values are 1 through 12."
+              },
+              "country": {
+                "type": "string",
+                "enum": [
+                  "US",
+                  "UK"
+                ],
+                "description": "Country of that clinic from the clinic directory in this plan: US or UK."
+              },
+              "product_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "medical_supplies.id of the supply."
+              },
+              "product_category": {
+                "type": "string",
+                "enum": [
+                  "medication",
+                  "ppe",
+                  "consumable",
+                  "equipment"
+                ],
+                "description": "Briefing category after the stored-category map: medication, ppe, consumable, or equipment."
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Supply units this event is about. The event description says which quantity."
+              },
+              "department": {
+                "type": "string",
+                "enum": [
+                  "primary_care",
+                  "specialty_care",
+                  "chronic_care",
+                  "general_consultation"
+                ],
+                "description": "Clinical area that consumed the supply. Never a patient, staff name, or record number."
+              },
+              "available_global": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "current_stock() value the handler compared against the request."
+              },
+              "rejection_reason": {
+                "const": "insufficient_stock",
+                "description": "Fixed reason for this event."
+              }
+            }
+          }
+        }
+      }
+    },
+    "inventory_validation_failed": {
+      "event_type": "inventory_validation_failed",
+      "classification": "identified_opportunity",
+      "category": "errors",
+      "emitter": "server",
+      "description": "An inventory write was rejected for a shape or reference error.",
+      "hypothesis": "which inventory fields fail validation most often, by route",
+      "decision": "to fix the field that operators trip over, or to correct seed and master data when unknown products dominate",
+      "delivery": "batch",
+      "delivery_justification": "The caller already sees the 400 or 404. Which field fails most is a backlog decision, reviewed with the other daily operational events.",
+      "throttle": "One event per rejected request. Requests that emit direct_stock_edit_rejected or outbound_order_rejected do not also emit this event.",
+      "anchor": "Emit for duplicate SKU on create_product (400), an unknown supply on either order route (404 from _get_supply), and a 422 from the inventory body models. reason_code selects the case. field_name is the model field when one is known.",
+      "sensitive_data": "The rejected value is excluded. A vendor string or a SKU typo is a place a person could be typed. Only the field name and the reason code are kept.",
+      "allowlist": [
+        {
+          "name": "route_template",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Route template of the rejected call."
+        },
+        {
+          "name": "method",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Inventory writes that this event covers are POST."
+        },
+        {
+          "name": "http_status",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Status returned to the client."
+        },
+        {
+          "name": "reason_code",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Why the write was rejected."
+        },
+        {
+          "name": "field_name",
+          "type": "anyOf",
+          "required": true,
+          "sensitive": false,
+          "description": "Model field that failed, or null when the failure is not a single field."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:inventory_validation_failed",
+        "title": "inventory_validation_failed",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "inventory_validation_failed"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_template",
+              "method",
+              "http_status",
+              "reason_code",
+              "field_name"
+            ],
+            "properties": {
+              "route_template": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": "^/[A-Za-z0-9_./{}-]{0,119}$",
+                "description": "Route template of the rejected call."
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "POST"
+                ],
+                "description": "Inventory writes that this event covers are POST."
+              },
+              "http_status": {
+                "type": "integer",
+                "minimum": 400,
+                "maximum": 422,
+                "description": "Status returned to the client."
+              },
+              "reason_code": {
+                "type": "string",
+                "enum": [
+                  "duplicate_sku",
+                  "unknown_product",
+                  "invalid_quantity",
+                  "invalid_clinic",
+                  "invalid_category",
+                  "invalid_country",
+                  "invalid_consumption_type",
+                  "invalid_department",
+                  "invalid_body"
+                ],
+                "description": "Why the write was rejected."
+              },
+              "field_name": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sku",
+                      "quantity",
+                      "clinic_id",
+                      "supply_id",
+                      "category",
+                      "country",
+                      "consumption_type",
+                      "vendor_name",
+                      "department",
+                      "unit",
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Model field that failed, or null when the failure is not a single field."
+              }
+            }
+          }
+        }
+      }
+    },
+    "client_exception_captured": {
+      "event_type": "client_exception_captured",
+      "classification": "identified_opportunity",
+      "category": "errors",
+      "emitter": "browser",
+      "description": "The backoffice hit an uncaught exception or an unhandled promise rejection.",
+      "hypothesis": "which backoffice sections throw during clinic hours",
+      "decision": "to patch the section that is breaking the receipt or consumption flow in the current shift",
+      "delivery": "stream",
+      "delivery_justification": "A broken order form stops stock from being recorded. That is visible the same shift, or the clinic works around it.",
+      "throttle": "Suppress a repeat of the same section and error_name for 60 seconds in that browser tab.",
+      "anchor": "Register window error and unhandledrejection listeners in the backoffice layout. POST the event to /telemetry/events.",
+      "sensitive_data": "The stack, the URL query, and the raw message are excluded. message_scrubbed has emails removed, runs of 6 or more digits replaced with [redacted], and is cut at 200 characters.",
+      "allowlist": [
+        {
+          "name": "section",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Backoffice section mounted when the exception was thrown."
+        },
+        {
+          "name": "error_name",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Error constructor name, such as TypeError or ApiError."
+        },
+        {
+          "name": "message_scrubbed",
+          "type": "string",
+          "required": true,
+          "sensitive": true,
+          "description": "Message after the scrubber. May be empty when the message was only an email or a long digit run."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:client_exception_captured",
+        "title": "client_exception_captured",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "client_exception_captured"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "section",
+              "error_name",
+              "message_scrubbed"
+            ],
+            "properties": {
+              "section": {
+                "type": "string",
+                "enum": [
+                  "home",
+                  "login",
+                  "register",
+                  "account_profile",
+                  "inventory_products",
+                  "inventory_orders",
+                  "inventory_inbound",
+                  "inventory_outbound",
+                  "incidents"
+                ],
+                "description": "Backoffice section mounted when the exception was thrown."
+              },
+              "error_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+                "description": "Error constructor name, such as TypeError or ApiError."
+              },
+              "message_scrubbed": {
+                "type": "string",
+                "maxLength": 200,
+                "description": "Message after the scrubber. May be empty when the message was only an email or a long digit run."
+              }
+            }
+          }
+        }
+      }
+    },
+    "api_latency_recorded": {
+      "event_type": "api_latency_recorded",
+      "classification": "identified_opportunity",
+      "category": "performance",
+      "emitter": "server",
+      "description": "A request's server duration was sampled, or it crossed the slow threshold.",
+      "hypothesis": "which API routes are slow enough to stall a receipt or a consumption during clinic hours",
+      "decision": "to investigate any inventory write that stays at or above 500 milliseconds",
+      "delivery": "stream",
+      "delivery_justification": "A slow inventory write is happening to someone at a clinic now. The slow cases are the ones worth seeing within minutes.",
+      "throttle": "Always emit when duration_ms is 500 or more. Otherwise emit about 1 in 20 requests. Draw the sample before logging. Record the route template, never the raw path and never the query string.",
+      "anchor": "Extend timing_middleware in services/api/main.py. Replace numeric path segments with the template names already used by the routers, such as {supply_id} and {user_id}.",
+      "sensitive_data": "Method, template, status, and duration only. The Authorization header and the body are excluded.",
+      "allowlist": [
+        {
+          "name": "method",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Request method."
+        },
+        {
+          "name": "route_template",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Path template after identifier replacement."
+        },
+        {
+          "name": "status_code",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "HTTP status of the response."
+        },
+        {
+          "name": "duration_ms",
+          "type": "number",
+          "required": true,
+          "sensitive": false,
+          "description": "Server duration measured by timing_middleware."
+        },
+        {
+          "name": "slow",
+          "type": "boolean",
+          "required": true,
+          "sensitive": false,
+          "description": "True when duration_ms is 500 or more."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:api_latency_recorded",
+        "title": "api_latency_recorded",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "api_latency_recorded"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "method",
+              "route_template",
+              "status_code",
+              "duration_ms",
+              "slow"
+            ],
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "DELETE"
+                ],
+                "description": "Request method."
+              },
+              "route_template": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": "^/[A-Za-z0-9_./{}-]{0,119}$",
+                "description": "Path template after identifier replacement."
+              },
+              "status_code": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599,
+                "description": "HTTP status of the response."
+              },
+              "duration_ms": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Server duration measured by timing_middleware."
+              },
+              "slow": {
+                "type": "boolean",
+                "description": "True when duration_ms is 500 or more."
+              }
+            }
+          }
+        }
+      }
+    },
+    "inventory_cache_summarised": {
+      "event_type": "inventory_cache_summarised",
+      "classification": "identified_opportunity",
+      "category": "performance",
+      "emitter": "server",
+      "description": "Hourly totals for the inventory TTL cache.",
+      "hypothesis": "whether the 60 second product cache and the 45 second order cache are hiding a stock change operators need to see",
+      "decision": "to shorten a TTL, or to bypass the cache on the product list while any clinic of that product is below its minimum",
+      "delivery": "batch",
+      "delivery_justification": "A single cache hit does not change a decision. The hourly ratio of hits, misses, and invalidations does.",
+      "throttle": "One event per cache key per completed hour. This replaces per-request cache events, which were discarded.",
+      "anchor": "Add hit, miss, and invalidation counters to TtlCache in services/ttl_cache.py. Keys are inventory:products (60 seconds) and inventory:orders (45 seconds). A scheduler emits the previous hour and resets the counters. userId and sessionId are null.",
+      "sensitive_data": "Counts and the two known cache keys. No cached row is copied.",
+      "allowlist": [
+        {
+          "name": "cache_key",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "TTL key that was counted."
+        },
+        {
+          "name": "hits",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Successful gets in the window."
+        },
+        {
+          "name": "misses",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Gets that found nothing or an expired entry."
+        },
+        {
+          "name": "invalidations",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Keys removed by invalidate_prefix after a write."
+        },
+        {
+          "name": "window_start",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Inclusive UTC start of the hour."
+        },
+        {
+          "name": "window_end",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Exclusive UTC end of the hour."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:inventory_cache_summarised",
+        "title": "inventory_cache_summarised",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "type": "null"
+          },
+          "userId": {
+            "type": "null"
+          },
+          "event_type": {
+            "const": "inventory_cache_summarised"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "cache_key",
+              "hits",
+              "misses",
+              "invalidations",
+              "window_start",
+              "window_end"
+            ],
+            "properties": {
+              "cache_key": {
+                "type": "string",
+                "enum": [
+                  "inventory:products",
+                  "inventory:orders"
+                ],
+                "description": "TTL key that was counted."
+              },
+              "hits": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Successful gets in the window."
+              },
+              "misses": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Gets that found nothing or an expired entry."
+              },
+              "invalidations": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Keys removed by invalidate_prefix after a write."
+              },
+              "window_start": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Inclusive UTC start of the hour."
+              },
+              "window_end": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Exclusive UTC end of the hour."
+              }
+            }
+          }
+        }
+      }
+    },
+    "backoffice_section_viewed": {
+      "event_type": "backoffice_section_viewed",
+      "classification": "identified_opportunity",
+      "category": "navigation",
+      "emitter": "browser",
+      "description": "An operator opened one of the known backoffice sections.",
+      "hypothesis": "which sections operators open, and which inventory steps they reach",
+      "decision": "to put the sections that are actually used on the first screen, and to question sections that are never opened",
+      "delivery": "batch",
+      "delivery_justification": "Section popularity is a weekly design question. The operator does not wait on this event.",
+      "throttle": "Debounce route changes by 1 second so a redirect does not emit two sections. One event per section entry after that pause.",
+      "anchor": "Listen to App Router path changes. Map the path to the section enum before sending. POST /telemetry/events.",
+      "sensitive_data": "The section code is an enum. The full URL, query string, and document title are excluded.",
+      "allowlist": [
+        {
+          "name": "section",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Section that was opened."
+        },
+        {
+          "name": "previous_section",
+          "type": "anyOf",
+          "required": true,
+          "sensitive": false,
+          "description": "Previous section in this tab, or null when the tab has no previous section."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:backoffice_section_viewed",
+        "title": "backoffice_section_viewed",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "backoffice_section_viewed"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "section",
+              "previous_section"
+            ],
+            "properties": {
+              "section": {
+                "type": "string",
+                "enum": [
+                  "home",
+                  "login",
+                  "register",
+                  "account_profile",
+                  "inventory_products",
+                  "inventory_orders",
+                  "inventory_inbound",
+                  "inventory_outbound",
+                  "incidents"
+                ],
+                "description": "Section that was opened."
+              },
+              "previous_section": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "home",
+                      "login",
+                      "register",
+                      "account_profile",
+                      "inventory_products",
+                      "inventory_orders",
+                      "inventory_inbound",
+                      "inventory_outbound",
+                      "incidents"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Previous section in this tab, or null when the tab has no previous section."
+              }
+            }
+          }
+        }
+      }
+    },
+    "backoffice_flow_abandoned": {
+      "event_type": "backoffice_flow_abandoned",
+      "classification": "identified_opportunity",
+      "category": "navigation",
+      "emitter": "browser",
+      "description": "An operator left the inbound or outbound form without a 201.",
+      "hypothesis": "which step of a receipt or a consumption is where operators stop",
+      "decision": "to change the step that accounts for the abandonments before adding more fields to the form",
+      "delivery": "batch",
+      "delivery_justification": "Form friction is reviewed with the weekly navigation batch. The operator is no longer on the form.",
+      "throttle": "One event when the form route unmounts and the tab saw no 201 for that form. Ignore unmounts shorter than 2 seconds.",
+      "anchor": "Instrument InboundOrderForm and OutboundOrderForm. Record the last step whose control became valid. Do not copy the control's value. POST /telemetry/events.",
+      "sensitive_data": "Step names are an enum. Quantity, vendor, and supply choice are excluded so a typed name cannot ride along in this event.",
+      "allowlist": [
+        {
+          "name": "flow",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Form that was left."
+        },
+        {
+          "name": "last_completed_step",
+          "type": "string",
+          "required": true,
+          "sensitive": false,
+          "description": "Last step that had a value. The value itself is not stored."
+        },
+        {
+          "name": "time_on_form_seconds",
+          "type": "integer",
+          "required": true,
+          "sensitive": false,
+          "description": "Seconds the form stayed mounted. Values under 2 seconds are not emitted."
+        }
+      ],
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "urn:healthcore:telemetry:backoffice_flow_abandoned",
+        "title": "backoffice_flow_abandoned",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "sessionId",
+          "userId",
+          "event_type",
+          "schemaVersion",
+          "requestId",
+          "properties"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "minLength": 36,
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_type": {
+            "const": "backoffice_flow_abandoned"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "flow",
+              "last_completed_step",
+              "time_on_form_seconds"
+            ],
+            "properties": {
+              "flow": {
+                "type": "string",
+                "enum": [
+                  "inbound_order",
+                  "outbound_order"
+                ],
+                "description": "Form that was left."
+              },
+              "last_completed_step": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "supply",
+                  "quantity",
+                  "vendor",
+                  "consumption_type",
+                  "clinic"
+                ],
+                "description": "Last step that had a value. The value itself is not stored."
+              },
+              "time_on_form_seconds": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 86400,
+                "description": "Seconds the form stayed mounted. Values under 2 seconds are not emitted."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
