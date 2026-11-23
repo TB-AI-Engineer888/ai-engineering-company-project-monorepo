@@ -1,3 +1,19 @@
+# Milestone — Nightly Telemetry Script
+
+Ticket DEV-53. Company: HealthCore.
+
+| What | Where |
+| --- | --- |
+| Script | `scripts/nightly_export.py` |
+| Status control | `services/job_runner.py` |
+| `job_runs` table | `services/migrations/001_job_runs.sql` |
+| Crontab | `scripts/nightly_export.cron` (`15 6 * * *`, 06:15 UTC) |
+| Tests | `tests/jobs/test_nightly_export.py` |
+
+The script is its own process. It does not import the API. It writes `data/raw/telemetry_YYYY-MM-DD.csv` when that file is missing, then runs `data/pipelines/pipeline.py` for the month that contains the exported day. `job_runs` is a separate table from `reporting.pipeline_runs`.
+
+---
+
 # Milestone — Designing a Business Performance Data Pipeline (Part 1 of 3)
 
 Company: HealthCore. This part is the design only.

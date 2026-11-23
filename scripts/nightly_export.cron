@@ -1,0 +1,12 @@
+# Nightly telemetry export. Operating-system crontab.
+# The API process does not load this file.
+#
+# 15 6 * * * is 06:15 UTC every day.
+# The previous UTC day is closed by then, so the script's default date is yesterday.
+# The monthly pipeline documents a 06:00 UTC start on day 1 of the month.
+# This job starts fifteen minutes later so the two do not share a start minute.
+#
+# DATABASE_URL must be set in this crontab. The script reads that variable itself.
+# The path below is the clone of this fork. Change it if the clone lives elsewhere.
+# TARGET_DATE=YYYY-MM-DD overrides the day for one run.
+15 6 * * * cd "$HOME/ai-engineering-company-project-monorepo" && python scripts/nightly_export.py
