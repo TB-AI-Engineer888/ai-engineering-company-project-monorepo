@@ -1,8 +1,4 @@
-"""Status control for the nightly telemetry export.
-
-job_runs is this job's record. reporting.pipeline_runs stays the monthly
-pipeline's record. This module does not import the API.
-"""
+"""Status rows for the nightly telemetry export."""
 
 from __future__ import annotations
 

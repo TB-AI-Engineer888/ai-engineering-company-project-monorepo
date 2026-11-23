@@ -1,4 +1,4 @@
-"""Nightly export state machine. SQLite stands in for Postgres. No API import."""
+"""Nightly export."""
 
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ def test_modules_do_not_import_the_api() -> None:
     assert "fastapi" not in sys.modules
 
 
-def test_crontab_and_sql_match_the_ticket() -> None:
+def test_crontab_and_job_runs_sql() -> None:
     cron = (ROOT / "scripts" / "nightly_export.cron").read_text(encoding="utf-8")
     assert "15 6 * * *" in cron
     assert "nightly_export.py" in cron

@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""Export one UTC day of telemetry and trigger the supply pipeline.
-
-Run from the monorepo root:
-
-    python scripts/nightly_export.py
-
-TARGET_DATE=YYYY-MM-DD selects the day. When it is unset, the day is yesterday UTC.
-
-The operating-system crontab in scripts/nightly_export.cron starts this file.
-This process does not import the API and does not run on the API thread.
-"""
+"""Export one UTC day of telemetry and trigger the supply pipeline."""
 
 from __future__ import annotations
 
@@ -66,11 +56,6 @@ def resolve_target_date(now: datetime | None = None) -> date:
 
 
 def run_pipeline(target_date: date) -> None:
-    """Run the Milestone 6 CLI for the month that contains target_date.
-
-    parse_month_start snaps the day to the first of that month. The CSV is only
-    a backup. The pipeline reads telemetry_events.
-    """
     script = ROOT / "data" / "pipelines" / "pipeline.py"
     completed = subprocess.run(
         [sys.executable, str(script), target_date.isoformat()],
