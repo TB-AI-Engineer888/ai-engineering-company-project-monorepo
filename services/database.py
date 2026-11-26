@@ -39,7 +39,7 @@ def database_url() -> str:
         raise RuntimeError("DATABASE_URL is not set")
     if url.startswith("postgresql://"):
         url = "postgresql+psycopg2://" + url[len("postgresql://") :]
-    if "sslmode=" not in url:
+    if url.startswith("postgresql") and "sslmode=" not in url:
         url += ("&" if "?" in url else "?") + "sslmode=require"
     return url
 

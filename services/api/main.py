@@ -192,6 +192,16 @@ def last_results() -> dict[str, Any]:
     return _LAST_RESULT.to_dict()
 
 
+@app.get("/tasks/{task_id}")
+def task_status(task_id: str, _: dict = Depends(get_current_user)) -> dict[str, Any]:
+    repo = Path(__file__).resolve().parents[2]
+    if str(repo) not in sys.path:
+        sys.path.insert(0, str(repo))
+    from services.celery_app import read_task
+
+    return read_task(task_id)
+
+
 @app.get("/", dependencies=[Depends(get_current_user)])
 def root() -> dict[str, str]:
     return {

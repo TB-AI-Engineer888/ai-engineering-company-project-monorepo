@@ -1,3 +1,23 @@
+# Async task worker
+
+```
+docker compose up redis flower
+```
+
+Flower listens on port 5555.
+
+The API and the worker read `REDIS_URL`. With Redis published on port 6379, set `REDIS_URL=redis://localhost:6379/0`.
+
+Start the worker from the repository root:
+
+```
+PYTHONPATH=. uv run --project services/api celery -A services.celery_app worker --loglevel=info
+```
+
+Stop the worker with Ctrl+C in that terminal. Stopping the API does not stop this process.
+
+---
+
 # Milestone — Designing a Business Performance Data Pipeline (Part 1 of 3)
 
 Company: HealthCore. This part is the design only.

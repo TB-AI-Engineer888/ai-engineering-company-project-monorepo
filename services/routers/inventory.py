@@ -9,11 +9,13 @@ from sqlmodel import Session, select
 
 _SERVICES_DIR = Path(__file__).resolve().parents[1]
 _API_DIR = _SERVICES_DIR / "api"
-for _path in (str(_SERVICES_DIR), str(_API_DIR)):
+_REPO_ROOT = _SERVICES_DIR.parent
+for _path in (str(_REPO_ROOT), str(_SERVICES_DIR), str(_API_DIR)):
     if _path not in sys.path:
-        sys.path.append(_path)
+        sys.path.insert(0, _path)
 
 from database import get_db
+from services.celery_app import enqueue_order_list
 from deps import get_current_user
 from inventory_stock import current_stock, stock_by_supply_id, to_supply_read
 from models import MedicalSupply, SupplyConsumption, SupplyDelivery
@@ -30,9 +32,7 @@ from schemas import (
 from ttl_cache import inventory_cache
 
 PRODUCTS_CACHE_KEY = "inventory:products"
-ORDERS_CACHE_KEY = "inventory:orders"
 PRODUCTS_TTL_SECONDS = 60
-ORDERS_TTL_SECONDS = 45
 INVENTORY_CACHE_PREFIX = "inventory:"
 
 inventory_router = APIRouter(prefix="/inventory", tags=["inventory"])
@@ -247,14 +247,6 @@ def create_outbound_order(
     )
 
 
-@inventory_router.get("/orders", response_model=list[InventoryOrderRead])
-def list_orders(
-    _: dict = Depends(get_current_user),
-    session: Session = Depends(get_db),
-) -> list[InventoryOrderRead]:
-    cached = inventory_cache.get(ORDERS_CACHE_KEY)
-    if cached is not None:
-        return [InventoryOrderRead.model_validate(row) for row in cached]
-    rows = load_order_rows(session)
-    _remember(ORDERS_CACHE_KEY, rows, ORDERS_TTL_SECONDS)
-    return rows
+@inventory_router.get("/orders", status_code=202)
+def list_orders(_: dict = Depends(get_current_user)) -> dict[str, str]:
+    return {"task_id": enqueue_order_list()}
