@@ -81,6 +81,14 @@ def test_catalog_reads_are_cached_until_a_delivery_is_logged() -> None:
 
     router.load_product_rows = count_products
     router.load_order_rows = count_orders
+    queued: list[str] = []
+
+    def fake_enqueue() -> str:
+        queued.append("inventory:orders")
+        return f"task-{len(queued)}"
+
+    original_enqueue = router.enqueue_order_list
+    router.enqueue_order_list = fake_enqueue
     try:
         first = client.get("/inventory/products", headers=headers)
         second = client.get("/inventory/products", headers=headers)
@@ -90,9 +98,11 @@ def test_catalog_reads_are_cached_until_a_delivery_is_logged() -> None:
 
         orders_first = client.get("/inventory/orders", headers=headers)
         orders_second = client.get("/inventory/orders", headers=headers)
-        assert orders_first.status_code == 200
-        assert orders_second.json() == orders_first.json()
-        assert order_calls["n"] == 1
+        assert orders_first.status_code == 202
+        assert orders_first.json() == {"task_id": "task-1"}
+        assert orders_second.json() == {"task_id": "task-2"}
+        assert queued == ["inventory:orders", "inventory:orders"]
+        assert order_calls["n"] == 0
 
         supply_id = first.json()[0]["id"]
         delivered = client.post(
@@ -113,6 +123,7 @@ def test_catalog_reads_are_cached_until_a_delivery_is_logged() -> None:
     finally:
         router.load_product_rows = real_products
         router.load_order_rows = real_orders
+        router.enqueue_order_list = original_enqueue
         inventory_cache.clear()
 
 

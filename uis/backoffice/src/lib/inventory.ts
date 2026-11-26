@@ -162,6 +162,28 @@ export function createSupplyConsumption(input: SupplyConsumptionInput): Promise<
   return postInventory<SupplyConsumptionRecord>("/inventory/orders/outbound", input);
 }
 
-export function listInventoryOrders(): Promise<InventoryOrder[]> {
-  return apiRequest<InventoryOrder[]>(inventoryUrl("/inventory/orders"), { method: "GET" }, { session: true });
+type OrderListTask = {
+  task_id: string;
+  status: string;
+  result: InventoryOrder[] | null;
+};
+
+export async function listInventoryOrders(): Promise<InventoryOrder[]> {
+  const accepted = await apiRequest<{ task_id: string }>(
+    inventoryUrl("/inventory/orders"),
+    { method: "GET" },
+    { session: true },
+  );
+  const deadline = Date.now() + 120000;
+  while (Date.now() < deadline) {
+    const task = await apiRequest<OrderListTask>(
+      inventoryUrl(`/tasks/${accepted.task_id}`),
+      { method: "GET" },
+      { session: true },
+    );
+    if (task.status === "success") return task.result ?? [];
+    if (task.status === "failure") throw new ApiError("The order list could not be loaded.", 500);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+  throw new ApiError("The order list is still running.", 504);
 }

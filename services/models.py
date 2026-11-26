@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from sqlalchemy import Column, Text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -48,3 +49,13 @@ class SupplyConsumption(SQLModel, table=True):
     user_uuid: str
 
     supply: Optional[MedicalSupply] = Relationship(back_populates="consumptions")
+
+
+class DeadLetterTask(SQLModel, table=True):
+    __tablename__ = "dead_letter_tasks"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    task_id: str = Field(index=True)
+    attempt_number: int
+    error: str = Field(sa_column=Column(Text, nullable=False))
+    timestamp: datetime = Field(default_factory=_utc_now)

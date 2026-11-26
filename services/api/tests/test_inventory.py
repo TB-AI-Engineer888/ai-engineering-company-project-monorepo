@@ -14,10 +14,18 @@ sys.path.insert(0, str(ROOT / "services"))
 sys.path.insert(0, str(API_DIR))
 
 from fastapi.testclient import TestClient
+from sqlmodel import Session, func, select
 
+import database
 from main import app
+from models import SupplyConsumption
 
 client = TestClient(app)
+
+
+def _consumption_count() -> int:
+    with Session(database.get_engine()) as session:
+        return int(session.exec(select(func.count()).select_from(SupplyConsumption)).one())
 
 
 def _auth_headers(email: str) -> dict[str, str]:
@@ -73,7 +81,7 @@ def test_outbound_over_stock_is_rejected_before_write() -> None:
         item["sku"]: item for item in client.get("/inventory/products", headers=headers).json()
     }
     saline = products["HCR-MED-001"]
-    before = client.get("/inventory/orders", headers=headers).json()
+    before = _consumption_count()
     response = client.post(
         "/inventory/orders/outbound",
         headers=headers,
@@ -89,8 +97,8 @@ def test_outbound_over_stock_is_rejected_before_write() -> None:
         f"Insufficient stock for supply '{saline['name']}'. "
         f"Available: {saline['current_stock']}, requested: {saline['current_stock'] + 5}."
     )
-    after = client.get("/inventory/orders", headers=headers).json()
-    assert len(after) == len(before)
+    after = _consumption_count()
+    assert after == before
 
 
 def test_orders_store_tinydb_user_uuid() -> None:

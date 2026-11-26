@@ -6,6 +6,7 @@ from pathlib import Path
 
 os.environ.setdefault("SECRET_KEY", "test-signing-secret")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("TINYDB_PATH", str(Path(tempfile.mkdtemp()) / "tinydb.json"))
 
 import pytest
