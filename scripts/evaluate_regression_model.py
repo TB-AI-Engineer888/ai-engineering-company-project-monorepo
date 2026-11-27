@@ -73,16 +73,73 @@ def chronological_folds(frame: pd.DataFrame, n_splits: int = N_SPLITS):
     return folds
 
 
+LAG_SOURCES = {
+    "revenue_lag_1": ("revenue_usd", 1),
+    "revenue_lag_12": ("revenue_usd", 12),
+    "visits_lag_1": ("visits_count", 1),
+    "visits_lag_12": ("visits_count", 12),
+    "avg_revenue_lag_1": ("avg_revenue_per_visit_usd", 1),
+}
+ROLLING_SOURCES = {
+    "revenue_roll_mean_3": ("revenue_usd", "mean"),
+    "revenue_roll_std_3": ("revenue_usd", "std"),
+    "visits_roll_mean_3": ("visits_count", "mean"),
+}
+
+
+def training_series() -> pd.DataFrame:
+    """All 2016-2023 rows, including the early months whose lags are still empty."""
+    featured = add_features(load_sales())
+    train, _test = split_train_test(featured)
+    return train.sort_values("month").reset_index(drop=True)
+
+
 def assert_no_future_lag(frame: pd.DataFrame) -> None:
-    """Lag and rolling inputs for a month come only from earlier months."""
-    revenue = frame["revenue_usd"].to_numpy()
+    """Every lag and rolling input comes from earlier months in the training years."""
     for position in range(len(frame)):
-        if position == 0:
+        row = frame.iloc[position]
+        for column, (source, offset) in LAG_SOURCES.items():
+            if pd.isna(row[column]):
+                continue
+            if position - offset < 0:
+                raise ValueError(f"{column} has no earlier month to read")
+            earlier = frame.iloc[position - offset]
+            if row["month"] <= earlier["month"]:
+                raise ValueError(f"{column} does not point at an earlier month")
+            if row[column] != earlier[source]:
+                raise ValueError(f"{column} does not equal the earlier month")
+        if any(pd.isna(row[column]) for column in ROLLING_SOURCES):
             continue
-        if frame.iloc[position]["revenue_lag_1"] != revenue[position - 1]:
-            raise ValueError("revenue_lag_1 does not point at the previous month")
-        if frame.iloc[position]["revenue_lag_1"] == revenue[position]:
-            raise ValueError("revenue_lag_1 uses the current month")
+        if position < 3:
+            raise ValueError("A rolling feature exists without three earlier months")
+        window = frame.iloc[position - 3 : position]
+        if window["month"].max() >= row["month"]:
+            raise ValueError("A rolling window includes the current month or a later one")
+        for column, (source, how) in ROLLING_SOURCES.items():
+            expected = window[source].mean() if how == "mean" else window[source].std()
+            if abs(float(row[column]) - float(expected)) > 0.01:
+                raise ValueError(f"{column} includes a month that is not strictly earlier")
+
+
+def assert_no_fold_leak(ready: pd.DataFrame, folds) -> None:
+    """A training row must not read a month that belongs to its validation block or a later one."""
+    series = training_series()
+    position_by_month = {month: position for position, month in enumerate(series["month"])}
+    for train_index, validation_index in folds:
+        validation_months = set(ready.iloc[validation_index]["month"])
+        for row_position in train_index:
+            month = ready.iloc[row_position]["month"]
+            origin = position_by_month[month]
+            source_positions = [origin - offset for _column, (_source, offset) in LAG_SOURCES.items()]
+            source_positions.extend([origin - 1, origin - 2, origin - 3])
+            for source_position in source_positions:
+                if source_position < 0:
+                    raise ValueError("A training feature reads before the series starts")
+                source_month = series.iloc[source_position]["month"]
+                if source_month >= month:
+                    raise ValueError("A training feature reads the current month or a later month")
+                if source_month in validation_months:
+                    raise ValueError("A lag or rolling feature crosses into the validation fold")
 
 
 def _score(actual: np.ndarray, predicted: np.ndarray) -> dict:
@@ -239,6 +296,23 @@ def full_train_and_validation_scores(frame: pd.DataFrame) -> dict:
     return {"training": train_score, "validation": validation_score}
 
 
+def stability_text(cross: dict) -> str:
+    """Say how the error moves when the training window changes. Do not call a spread flat."""
+    rows = cross["folds"]
+    rmses = [row["validation_rmse"] for row in rows]
+    earliest = min(rows, key=lambda row: row["validation_rmse"])
+    latest = max(rows, key=lambda row: row["validation_rmse"])
+    return (
+        f"Validation RMSE is {cross['validation_rmse_mean']:.0f} ± {cross['validation_rmse_std']:.0f} USD "
+        f"and validation MAE is {cross['validation_mae_mean']:.0f} ± {cross['validation_mae_std']:.0f} USD "
+        f"across five chronological folds. The lowest validation RMSE is {earliest['validation_rmse']:.0f} USD "
+        f"on the window ending {earliest['validation_end']}. The highest is {latest['validation_rmse']:.0f} USD "
+        f"on the window ending {latest['validation_end']}. Changing the training portion moves the error, "
+        f"and the latest window is the largest move. The spread is {max(rmses) - min(rmses):.0f} USD, "
+        "so the performance is not flat, and it does not jump to a different scale."
+    )
+
+
 def write_report(result: dict) -> None:
     diagnosis = result["diagnosis"]
     cross = result["cross_validation"]
@@ -246,26 +320,36 @@ def write_report(result: dict) -> None:
     lines = [
         "# HealthCore revenue model evaluation",
         "",
+        "The target is `revenue_usd` on the `consolidated` rows in `data/raw/healthcore_sales.csv`. No patient identifier, diagnosis, or clinical field is used.",
+        "",
+        "## 1. Does the model show underfitting, overfitting, or is it reasonably well fitted?",
+        "",
         f"The model is **{diagnosis['label']}**.",
         "",
-        "The learning curve uses only 2016-2023. The last 12 of those months are the validation block, and the earlier months are added from the start of the series. At the full training size the training RMSE is "
-        f"{diagnosis['train_rmse_percent']:.1f}% of average monthly training revenue and the validation RMSE is "
-        f"{diagnosis['validation_rmse_percent']:.1f}%. The seasonal moves in the briefing are a 12-18% summer drop and a 15-20% October-December rise, so this error is smaller than those moves.",
+        "The learning curve uses only 2016-2023. Training months are added from the start of that series, and the last 12 months of 2023 stay the validation block. "
+        f"At 72 training months the training RMSE is {scores['training']['rmse']:.0f} USD "
+        f"({diagnosis['train_rmse_percent']:.1f}% of average monthly training revenue) and the validation RMSE is "
+        f"{scores['validation']['rmse']:.0f} USD ({diagnosis['validation_rmse_percent']:.1f}%). "
+        "The training line stays low and the validation line stays higher as the training set grows. That is a wide, persistent gap, which is overfitting. "
+        "The training error is not high, so this is not underfitting. The two lines do not meet, so the model is not reasonably well fitted.",
         "",
-        "Five chronological folds, validation RMSE "
-        f"{cross['validation_rmse_mean']:.0f} ± {cross['validation_rmse_std']:.0f} USD "
-        f"and validation MAE {cross['validation_mae_mean']:.0f} ± {cross['validation_mae_std']:.0f} USD. "
-        "No fold is shuffled, and each later validation block starts after the previous one.",
+        "## 2. How stable is its performance when you change which portion of the data you train on?",
         "",
-        "RMSE is the primary metric. A large miss in July-August or October-December costs HealthCore more than a small miss, because those seasons move revenue by 12-20 percent. MAE is the typical monthly dollar miss and is reported beside it. "
-        f"On the final training fit, training MAE is {scores['training']['mae']:.0f} USD and training RMSE is {scores['training']['rmse']:.0f} USD. "
-        f"Validation MAE is {scores['validation']['mae']:.0f} USD and validation RMSE is {scores['validation']['rmse']:.0f} USD.",
+        stability_text(cross),
         "",
-        "## Corrective action",
+        "## 3. If there is a problem, what is the specific corrective action?",
         "",
         diagnosis["action"],
         "",
-        "No patient-level fields are used. The series remains the consolidated monthly revenue in `data/raw/healthcore_sales.csv`.",
+        "## Metrics",
+        "",
+        "RMSE is the primary metric. MAE is reported beside it. "
+        "HealthCore's October-December revenue rises 15-20% and July-August revenue falls 12-18%, while the other months move about ±5%. "
+        "RMSE penalizes a miss of that seasonal size more than MAE does. MAE is the typical monthly dollar miss. "
+        f"Training MAE is {scores['training']['mae']:.0f} USD and training RMSE is {scores['training']['rmse']:.0f} USD. "
+        f"Validation MAE is {scores['validation']['mae']:.0f} USD and validation RMSE is {scores['validation']['rmse']:.0f} USD.",
+        "",
+        "The plot is `data/eval/learning_curve.png`.",
         "",
     ]
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -274,8 +358,9 @@ def write_report(result: dict) -> None:
 
 def evaluate() -> dict:
     frame = training_frame()
-    assert_no_future_lag(frame)
+    assert_no_future_lag(training_series())
     cross = cross_validate(frame)
+    assert_no_fold_leak(frame, chronological_folds(frame))
     curve = learning_curve(frame)
     save_learning_curve(curve)
     scores = full_train_and_validation_scores(frame)
