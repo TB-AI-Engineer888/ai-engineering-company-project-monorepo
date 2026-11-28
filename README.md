@@ -14,7 +14,7 @@ Company: HealthCore. Front-desk answers for Priya Nair's coordinators.
 | Design | `docs/rag/rag-design.md` |
 | Qdrant | `docker-compose.yml` |
 
-The collection name is `healthcore_knowledge`. Embeddings use `BAAI/bge-small-en-v1.5`. Generation uses a different model id, `gpt-4o-mini`, when `LLM_API_KEY` is set.
+The collection name is `healthcore_knowledge`. Embeddings use `downtown-miami/openrouter/perplexity/pplx-embed-v1-0.6b`. Generation uses `downtown-miami/openrouter/deepseek/deepseek-v4-flash`. Both are 4Geeks Student models.
 
 ---
 

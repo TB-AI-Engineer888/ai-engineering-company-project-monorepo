@@ -30,8 +30,10 @@ LANGUAGE = "en"
 # above. 0.62 drops off-topic questions and still keeps the correct chunk in
 # the top 3 for the eval set. See docs/rag/rag-design.md.
 MIN_SCORE = 0.62
-EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
-GENERATION_MODEL = "gpt-4o-mini"
+LOCAL_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+EMBEDDING_MODEL = "downtown-miami/openrouter/perplexity/pplx-embed-v1-0.6b"
+GENERATION_MODEL = "downtown-miami/openrouter/deepseek/deepseek-v4-flash"
+API_URL = "https://llm.4geeks.ai/v1"
 POINT_NAMESPACE = uuid.UUID("8c1b6a4e-5d27-4f0a-9b3c-1e7a2d6f90ab")
 
 SOURCE_SLUGS = {
@@ -170,9 +172,8 @@ def point_id(source_document: str, chunk_index: int) -> str:
     return str(uuid.uuid5(POINT_NAMESPACE, f"{source_document}:{chunk_index}"))
 
 
-def _local_embedder():
+def _local_embedder(model_name: str):
     global _embedder
-    model_name = embedding_model_name()
     if _embedder is None or getattr(_embedder, "model_name", None) != model_name:
         from fastembed import TextEmbedding
 
@@ -187,7 +188,7 @@ def _embed_http(text: str, model_name: str) -> list[float]:
     api_key = os.environ.get("LLM_API_KEY", "").strip()
     if not api_key:
         raise ValueError("LLM_API_KEY is required for the remote embeddings model")
-    api_url = os.environ.get("LLM_API_URL", "https://api.openai.com/v1").rstrip("/")
+    api_url = os.environ.get("LLM_API_URL", API_URL).rstrip("/")
     response = httpx.post(
         f"{api_url}/embeddings",
         headers={"Authorization": f"Bearer {api_key}"},
@@ -206,10 +207,14 @@ def embed(text: str) -> list[float]:
     model_name = embedding_model_name()
     if model_name == generation_model_name():
         raise ValueError("embed() must use a different model from the generation model")
-    if model_name.startswith(("BAAI/", "sentence-transformers/", "jinaai/", "nomic-ai/", "Qdrant/")):
-        vector = next(iter(_local_embedder().embed([cleaned])))
-        return [float(value) for value in vector]
-    return _embed_http(cleaned, model_name)
+    local_name = model_name
+    if not model_name.startswith(("BAAI/", "sentence-transformers/", "jinaai/", "nomic-ai/", "Qdrant/")):
+        if not os.environ.get("LLM_API_KEY", "").strip():
+            local_name = LOCAL_EMBEDDING_MODEL
+        else:
+            return _embed_http(cleaned, model_name)
+    vector = next(iter(_local_embedder(local_name).embed([cleaned])))
+    return [float(value) for value in vector]
 
 
 def setup(corpus_dir: Path | None = None, client: QdrantClient | None = None) -> int:

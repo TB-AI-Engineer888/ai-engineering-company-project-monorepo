@@ -36,17 +36,17 @@ Re-running `setup()` does not duplicate points. The point id is a UUID5 of `sour
 
 `embed()` and the generation call use different model ids.
 
-| Job | Model id | Default |
-| --- | --- | --- |
-| Embeddings | `LLM_EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` |
-| Generation | `LLM_MODEL` | `gpt-4o-mini` |
+| Job | Model id |
+| --- | --- |
+| Embeddings | `downtown-miami/openrouter/perplexity/pplx-embed-v1-0.6b` |
+| Generation | `downtown-miami/openrouter/deepseek/deepseek-v4-flash` |
 
-`embed()` refuses to run if those two ids are the same. The default embedding model is a local fastembed model, 384 dimensions, cosine similarity in Qdrant. The same function embeds chunks at index time and the question at query time. Text is whitespace-normalized before embedding. No other preprocessing is applied.
+These are the two 4Geeks Student models. The ids are different. `embed()` refuses to run if they are the same. Calls go to `https://llm.4geeks.ai/v1` when `LLM_API_KEY` is set. The same `embed()` function embeds chunks at index time and the question at query time. Text is whitespace-normalized before embedding. No other preprocessing is applied.
+
+With no `LLM_API_KEY`, indexing uses the local fastembed model `BAAI/bge-small-en-v1.5`, 384 dimensions, cosine similarity in Qdrant. That is the model the Recall@3 figure below was measured on.
 
 `min_score` is 0.62. On this model, the correct policy chunk for the eval questions scores about 0.78 to 0.87. An unrelated question such as the capital of France scores about 0.41 and is dropped, so the generator is not handed a policy that does not answer the question. The threshold was chosen by reading those scores, not by copying a generic 0.7 from a different embedding model.
 
 `data/eval/test-queries.json` has 14 questions covering all four documents. Recall@3 against `retrieve()` with this threshold is 100%.
 
-The generation model is called at `LLM_API_URL` (default `https://api.openai.com/v1/chat/completions`) when `LLM_API_KEY` is set. The prompt tells it to speak as a HealthCore front-desk coordinator for Priya Nair, to use only the excerpts, to separate the United States from the United Kingdom on coverage questions that name no country, to never charge a Medicare or Medicaid patient a no-show fee, and to send an unlisted insurer to the billing team. If `LLM_API_KEY` is empty, `generate_answer()` still writes that coordinator reply from the retrieved sentences only, and it copies fees and timeframes verbatim so they cannot drift.
-
-The academy model picker can replace either default. Set `LLM_EMBEDDING_MODEL` and `LLM_MODEL` to the two different ids, and set `LLM_API_KEY` plus `LLM_API_URL` when the embeddings id is a remote API model rather than a `BAAI/` or `sentence-transformers/` model.
+The generation model is called at `LLM_API_URL` (`https://llm.4geeks.ai/v1/chat/completions`) when `LLM_API_KEY` is set. The prompt tells it to speak as a HealthCore front-desk coordinator for Priya Nair, to use only the excerpts, to separate the United States from the United Kingdom on coverage questions that name no country, to never charge a Medicare or Medicaid patient a no-show fee, and to send an unlisted insurer to the billing team. If `LLM_API_KEY` is empty, `generate_answer()` still writes that coordinator reply from the retrieved sentences only, and it copies fees and timeframes verbatim so they cannot drift.

@@ -128,7 +128,7 @@ def _chat(prompt: str) -> str:
     import httpx
 
     api_key = os.environ.get("LLM_API_KEY", "").strip()
-    api_url = os.environ.get("LLM_API_URL", "https://api.openai.com/v1").rstrip("/")
+    api_url = os.environ.get("LLM_API_URL", "https://llm.4geeks.ai/v1").rstrip("/")
     response = httpx.post(
         f"{api_url}/chat/completions",
         headers={"Authorization": f"Bearer {api_key}"},
