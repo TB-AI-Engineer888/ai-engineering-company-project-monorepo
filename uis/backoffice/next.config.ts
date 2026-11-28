@@ -36,6 +36,10 @@ const nextConfig: NextConfig = {
         source: "/reporting/:path*",
         destination: `${apiOrigin}/reporting/:path*`,
       },
+      {
+        source: "/knowledge/:path*",
+        destination: `${apiOrigin}/knowledge/:path*`,
+      },
     ];
   },
 };

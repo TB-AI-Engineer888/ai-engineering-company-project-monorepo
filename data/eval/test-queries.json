@@ -1,0 +1,72 @@
+[
+  {
+    "question": "Is there a charge for cancelling 12 hours in advance for a private-pay patient?",
+    "source_document": "appointment-policy",
+    "expect_text": "50 USD"
+  },
+  {
+    "question": "Are Medicare or Medicaid patients charged a no-show fee?",
+    "source_document": "appointment-policy",
+    "expect_text": "not charged a no-show fee"
+  },
+  {
+    "question": "How soon can a routine appointment usually be booked?",
+    "source_document": "appointment-policy",
+    "expect_text": "3 to 5 days"
+  },
+  {
+    "question": "When does a patient with repeated no-shows need coordinator review?",
+    "source_document": "appointment-policy",
+    "expect_text": "3 no-shows in the last 6 months"
+  },
+  {
+    "question": "Which commercial insurers does HealthCore accept in the United States?",
+    "source_document": "insurance-coverage",
+    "expect_text": "Blue Cross Blue Shield"
+  },
+  {
+    "question": "Is Medicaid accepted at Georgia clinics?",
+    "source_document": "insurance-coverage",
+    "expect_text": "not currently at Georgia"
+  },
+  {
+    "question": "How does the NHS contract work at London and Manchester clinics?",
+    "source_document": "insurance-coverage",
+    "expect_text": "limited NHS contract"
+  },
+  {
+    "question": "What discount can an uninsured patient get by paying the same day?",
+    "source_document": "insurance-coverage",
+    "expect_text": "20% discount"
+  },
+  {
+    "question": "Who must a coordinator call if a referral has no appointment options after 5 business days?",
+    "source_document": "referral-process",
+    "expect_text": "Marcus Reid"
+  },
+  {
+    "question": "What is the current average time from referral creation to a confirmed appointment?",
+    "source_document": "referral-process",
+    "expect_text": "11 days"
+  },
+  {
+    "question": "Do referrals to specialists outside the HealthCore network use the automated process?",
+    "source_document": "referral-process",
+    "expect_text": "manual handling"
+  },
+  {
+    "question": "Which consent form does a new patient sign in the United Kingdom?",
+    "source_document": "new-patient-checklist",
+    "expect_text": "UK GDPR"
+  },
+  {
+    "question": "What documents should a new patient bring on the day of the appointment?",
+    "source_document": "new-patient-checklist",
+    "expect_text": "valid ID document"
+  },
+  {
+    "question": "Can a new patient still be seen if the medical history form is not finished?",
+    "source_document": "new-patient-checklist",
+    "expect_text": "consultation time will be reduced"
+  }
+]
