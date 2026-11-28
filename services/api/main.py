@@ -70,6 +70,20 @@ def _load_reporting_router():
 reporting_router = _load_reporting_router()
 
 
+def _load_knowledge_router():
+    path = _SERVICES_DIR / "routers" / "knowledge.py"
+    spec = importlib.util.spec_from_file_location("healthcore_knowledge_router", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load services/routers/knowledge.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.knowledge_router
+
+
+knowledge_router = _load_knowledge_router()
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     if os.environ.get("DATABASE_URL", "").strip():
@@ -86,6 +100,7 @@ app.include_router(profiles_router)
 app.include_router(inventory_router)
 app.include_router(telemetry_router)
 app.include_router(reporting_router)
+app.include_router(knowledge_router)
 
 app.add_middleware(
     CORSMiddleware,

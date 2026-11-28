@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, CircleUser, ClipboardList, FileBarChart, HeartPulse, LayoutDashboard, Package } from "lucide-react";
+import { Activity, CircleUser, ClipboardList, FileBarChart, HeartPulse, LayoutDashboard, MessagesSquare, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ const NAV = [
   { href: "/incidents", label: "Incident analyzer", icon: FileBarChart },
   { href: "/reporting", label: "Supply performance", icon: FileBarChart },
   { href: "/telemetry", label: "Telemetry", icon: Activity },
+  { href: "/knowledge", label: "Coordinator desk", icon: MessagesSquare },
   { href: "/account/profile", label: "Account profile", icon: CircleUser },
 ];
 
@@ -27,6 +28,7 @@ function sectionTitle(pathname: string) {
   if (pathname.startsWith("/incidents")) return "Incident analyzer";
   if (pathname.startsWith("/reporting")) return "Supply performance";
   if (pathname.startsWith("/telemetry")) return "Telemetry";
+  if (pathname.startsWith("/knowledge")) return "Coordinator desk";
   if (pathname.startsWith("/account")) return "Account";
   return "Operations overview";
 }

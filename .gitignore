@@ -10,4 +10,5 @@ coverage/
 **/.env
 data/raw/*.json
 data/eval/*.json
+!data/eval/test-queries.json
 

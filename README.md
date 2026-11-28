@@ -1,3 +1,23 @@
+# Milestone — RAG & Knowledge Base
+
+Company: HealthCore. Front-desk answers for Priya Nair's coordinators.
+
+| What | Where |
+| --- | --- |
+| Source policies | `docs/company-knowledge-base/` |
+| Chunking and indexing | `data/process/rag.py` |
+| Retrieval and generation | `data/pipelines/rag.py` |
+| Desk endpoint | `POST /knowledge/query` |
+| Desk page | `uis/backoffice` route `/knowledge` |
+| Tests | `tests/pipelines/test_rag.py` |
+| Eval questions | `data/eval/test-queries.json` |
+| Design | `docs/rag/rag-design.md` |
+| Qdrant | `docker-compose.yml` |
+
+The collection name is `healthcore_knowledge`. Embeddings use `BAAI/bge-small-en-v1.5`. Generation uses a different model id, `gpt-4o-mini`, when `LLM_API_KEY` is set.
+
+---
+
 # Milestone — Designing a Business Performance Data Pipeline (Part 1 of 3)
 
 Company: HealthCore. This part is the design only.
